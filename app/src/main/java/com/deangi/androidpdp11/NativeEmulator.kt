@@ -12,11 +12,11 @@ class NativeEmulator : ConsoleExecutionCore {
     fun bootDisks(fds: IntArray, hddMask: Int, bootDrive: Int): Boolean = withHandle { nativeBootDisks(it, fds, hddMask, bootDrive) }
     fun replaceDisks(fds: IntArray, hddMask: Int): Boolean = withHandle { nativeReplaceDisks(it, fds, hddMask) }
     fun runCycles(minCycles: Long): Long = withHandle { nativeRunCycles(it, minCycles) }
-    fun runInstructions(count: Long): Long = withHandle { nativeRunInstructions(it, count) }
+    override fun runInstructions(count: Long): Long = withHandle { nativeRunInstructions(it, count) }
     fun load(address: Int, bytes: ByteArray) = withHandle { nativeLoad(it, address, bytes) }
-    fun enqueueInput(value: Byte) = withHandle { nativeEnqueueInput(it, value) }
-    fun hasPendingConsoleInput(): Boolean = withHandle { nativeHasPendingConsoleInput(it) }
-    fun drainConsole(): ByteArray = withHandle { nativeDrainConsole(it) }
+    override fun enqueueInput(value: Byte) = withHandle { nativeEnqueueInput(it, value) }
+    override fun hasPendingConsoleInput(): Boolean = withHandle { nativeHasPendingConsoleInput(it) }
+    override fun drainConsole(): ByteArray = withHandle { nativeDrainConsole(it) }
     fun drainPrinter(): ByteArray = withHandle { nativeDrainPrinter(it) }
     fun takeDiskError(): String = withHandle { nativeTakeDiskError(it) }
 

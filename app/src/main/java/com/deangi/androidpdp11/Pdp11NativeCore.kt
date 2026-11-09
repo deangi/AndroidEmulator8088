@@ -14,12 +14,12 @@ class Pdp11NativeCore : ConsoleExecutionCore {
         set(value) = withHandle { nativeSetMemorySizeBytes(it, value) }
 
     fun reset(entryPc: Int = 0) = withHandle { nativeReset(it, entryPc) }
-    fun runInstructions(count: Long): Long = withHandle { nativeRunInstructions(it, count) }
+    override fun runInstructions(count: Long): Long = withHandle { nativeRunInstructions(it, count) }
     fun clearMemory(value: Byte = 0) = withHandle { nativeClearMemory(it, value) }
     fun load(address: Int, bytes: ByteArray) = withHandle { nativeLoad(it, address, bytes) }
-    fun enqueueInput(value: Byte) = withHandle { nativeEnqueueInput(it, value) }
-    fun hasPendingConsoleInput(): Boolean = withHandle { nativeHasPendingConsoleInput(it) }
-    fun drainConsole(): ByteArray = withHandle { nativeDrainConsole(it) }
+    override fun enqueueInput(value: Byte) = withHandle { nativeEnqueueInput(it, value) }
+    override fun hasPendingConsoleInput(): Boolean = withHandle { nativeHasPendingConsoleInput(it) }
+    override fun drainConsole(): ByteArray = withHandle { nativeDrainConsole(it) }
 
     override fun close() = synchronized(this) {
         if (handle != 0L) nativeDestroy(handle).also { handle = 0L }
