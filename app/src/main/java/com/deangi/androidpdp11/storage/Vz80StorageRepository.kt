@@ -374,7 +374,10 @@ class Vz80StorageRepository(private val context: Context) {
     private fun prepare(rootUri: Uri): Vz80StorageSnapshot? {
         val root = DocumentFile.fromTreeUri(context, rootUri) ?: return null
         if (!root.canRead() || !root.canWrite()) return null
-        val directory = root.findFile(VZ80_DIRECTORY) ?: root.createDirectory(VZ80_DIRECTORY) ?: return null
+        // Accept either the storage root (where we create/find vPDP11) or
+        // vPDP11 itself, which is the natural choice in Android's picker.
+        val directory = if (root.name.equals(VZ80_DIRECTORY, ignoreCase = true)) root
+        else root.findFile(VZ80_DIRECTORY) ?: root.createDirectory(VZ80_DIRECTORY) ?: return null
         seed(directory)
         return scan(directory)
     }
@@ -382,7 +385,7 @@ class Vz80StorageRepository(private val context: Context) {
     private fun vz80Directory(): DocumentFile? = preferences.getString(TREE_URI_KEY, null)
         ?.let(Uri::parse)
         ?.let { rootUri -> DocumentFile.fromTreeUri(context, rootUri) }
-        ?.findFile(VZ80_DIRECTORY)
+        ?.let { root -> if (root.name.equals(VZ80_DIRECTORY, ignoreCase = true)) root else root.findFile(VZ80_DIRECTORY) }
 
     private fun seed(directory: DocumentFile) {
         context.assets.list(SEED_DIRECTORY).orEmpty().forEach { assetName ->
