@@ -45,6 +45,11 @@ void Engine::reset(const uint16_t entryPc)
     machine.getCpu()->setPC(entryPc);
 }
 
+void Engine::setProgramCounter(const uint16_t entryPc)
+{
+    machine.getCpu()->setPC(entryPc);
+}
+
 uint64_t Engine::runInstructions(const uint64_t count)
 {
     const uint64_t before = machine.getCpu()->get_instructions_executed_count();

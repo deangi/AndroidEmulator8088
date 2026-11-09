@@ -38,6 +38,7 @@ public:
     Engine& operator=(const Engine&) = delete;
 
     void reset(uint16_t entryPc = 0);
+    void setProgramCounter(uint16_t entryPc);
     uint64_t runInstructions(uint64_t count);
     void setMemorySizeBytes(uint32_t bytes);
     uint32_t memorySizeBytes() const;

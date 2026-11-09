@@ -22,9 +22,9 @@ object Pdp11ConsoleProgram {
             image[index * 2] = word.toByte()
             image[index * 2 + 1] = (word ushr 8).toByte()
         }
-        core.reset(loadAddress)
+        core.reset()
         core.clearMemory()
         core.load(loadAddress, image)
-        core.reset(loadAddress)
+        core.setProgramCounter(loadAddress)
     }
 }
