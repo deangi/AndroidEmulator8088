@@ -36,7 +36,7 @@ class TelnetShellSession(
                     line.clear()
                     write("\r\n")
                     if (input.equals("exit", true)) {
-                        write("Returning Telnet to the CP/M console.\r\n")
+                        write("Returning Telnet to the emulator console.\r\n")
                         active = false
                     } else {
                         val result = runCatching { command(input) }.getOrElse { "Error: ${it.message ?: it.javaClass.simpleName}\r\n" }
@@ -55,7 +55,7 @@ class TelnetShellSession(
             }
             else -> if (c == '>'.code) {
                 escapeState = 0; active = true; line.clear()
-                write("\r\nAndroidEmulatorPdp11 management shell\r\nCP/M continues running. Type help; exit returns to the console.\r\nvz80:/> ")
+                write("\r\nAndroidEmulatorPdp11 management shell\r\nThe active emulator continues running. Type help; exit returns to the console.\r\nemulator:/> ")
             } else {
                 guestInput(27); guestInput('>'.code.toByte()); escapeState = 0; accept(byte)
             }

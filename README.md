@@ -11,7 +11,7 @@ terminal, foreground-service, Telnet, and document-storage scaffolding are
 being retained; the inherited Z80 CPU and CP/M-specific disk implementation
 are temporary and will be replaced in the PDP-11 engine phases.
 
-The current Phase 2 build is `0.2.10` (version code 210), dated 2026-11-09.
+The current Phase 2 build is `0.2.11` (version code 211), dated 2026-11-09.
 Phase numbers use the minor version (`0.1.x`, `0.2.x`, and so on); patch
 numbers advance for each build within a phase. Version `1.0.0` is reserved
 for a near-working prototype.

@@ -114,8 +114,13 @@ class EmulatorSession(context: Context) : AutoCloseable {
         terminal.reset()
         activeConsoleCore = pdp11TestCore
         Pdp11ConsoleProgram.load(pdp11TestCore)
+        // Keep the diagnostic PDP-11 console distinct from any concurrently
+        // installed AndroidVZ80/CP-M app, which normally listens on 2323.
+        telnet.start(PDP11_TEST_TELNET_PORT, console::acceptTelnetInput)
+        telnetRequested.value = true
+        telnetManuallyStopped.value = false
         diskError.value = ""
-        console.publishOutput("[PDP-11 console test: no disk mounted]\r\n".encodeToByteArray())
+        console.publishOutput("[PDP-11 console test: no disk mounted; Telnet port $PDP11_TEST_TELNET_PORT]\r\n".encodeToByteArray())
         terminalVersion.intValue++
         emulatorRunning.value = true
     }
@@ -195,3 +200,5 @@ class EmulatorSession(context: Context) : AutoCloseable {
 }
 
 data class TelnetStatus(val port: Int? = null, val clientAddress: String? = null, val error: String? = null)
+
+private const val PDP11_TEST_TELNET_PORT = 2324
