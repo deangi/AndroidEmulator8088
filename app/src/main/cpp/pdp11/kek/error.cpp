@@ -10,7 +10,7 @@
 #include <signal.h>
 #if defined(ESP32) || defined(BUILD_FOR_PICO2W) || defined(TEENSY4_1)
 #include <Arduino.h>
-#elif defined(_WIN32)
+#elif defined(_WIN32) || defined(ANDROID)
 #elif defined(__FreeBSD__)
 #include <ncurses/ncurses.h>
 #else
@@ -26,7 +26,7 @@
 #else
 	int e = errno;
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(ANDROID)
 	(void)endwin();
 #endif
 

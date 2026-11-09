@@ -1,7 +1,7 @@
 // (C) 2018-2026 by Folkert van Heusden
 // Released under MIT license
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(ANDROID)
 #include <ArduinoJson.h>
 #endif
 #include <optional>
@@ -34,7 +34,7 @@ void update_word(uint16_t *const w, const bool msb, const uint8_t v);
 void set_nodelay(const int fd);
 std::string get_endpoint_name(const int fd);
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(ANDROID)
 std::optional<JsonDocument> deserialize_file(const std::string & filename);
 #endif
 

@@ -5,10 +5,14 @@
 is preserved in `kek/LICENSE`.
 
 This directory intentionally excludes the donor's platform projects, generated
-build output, sample disk images, and host executables. The next porting step
-is to compile the CPU, MMU, memory, bus, and minimal console/device subset
-against Android's NDK, using `compat/` only for code that was specific to the
-Windows staging harness.
+build output, sample disk images, and host executables. The CPU, MMU, memory,
+bus, RK05, and minimal console/device subset now compile as the `pdp11core`
+Android NDK static target. `compat/` supplies Android-safe console, logging,
+and file-descriptor helpers in place of the Windows staging harness.
+
+`pdp11core` is linked into the app's native library, but its JNI adapter is not
+yet connected to the existing Kotlin emulator API. That replacement is the
+next Phase 2 increment.
 
 Do not pass Android filesystem paths into this engine. The Android host opens
 media and supplies file descriptors through the emulator drive interface.
