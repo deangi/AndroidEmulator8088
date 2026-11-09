@@ -1,0 +1,133 @@
+package com.deangi.emulator.core
+
+import java.io.Closeable
+
+/**
+ * Architecture-neutral contract between the Android host and a native guest.
+ *
+ * A core owns CPU execution and its primary console UART/TTY.  Disk geometry,
+ * boot profiles, front-panel switches, and printer hardware deliberately do
+ * not belong here: those are machine capabilities and vary substantially
+ * between CP/M/Z80 and PDP-11 systems.
+ */
+interface EmulatorCore : Closeable {
+    val architecture: EmulatorArchitecture
+    val workspace: EmulatorWorkspace
+
+    /** Human-readable CPU/model identity, e.g. "Z80", "8080", or "PDP-11/70". */
+    val processorId: String
+
+    /** Installed, addressable RAM.  Applying a new size resets the machine. */
+    var memorySizeBytes: Long
+
+    /** Restores the CPU and machine to its architecture-defined reset state. */
+    fun reset()
+
+    /** Fills the complete installed RAM range; defaults to a conventional cold-clear. */
+    fun clearMemory(value: Byte = 0)
+
+    /** Executes no more than [instructionBudget] guest instructions. */
+    fun runInstructions(instructionBudget: Long): ExecutionResult
+
+    /** The machine's interactive console. */
+    val console: ConsolePort
+
+    /** Named removable/fixed media slots, independent of their media geometry. */
+    val drives: DrivePort
+
+    /** Present only for machines configured with a line-printer device. */
+    val linePrinter: LinePrinterPort?
+
+    /** Present only when the emulated machine exposes an operator front panel. */
+    val frontPanel: FrontPanelPort?
+
+    /** Returns and clears asynchronous host-visible failures. */
+    fun takeHostError(): String
+}
+
+enum class EmulatorArchitecture { Z80, PDP11 }
+
+/**
+ * Host-visible layout for one emulator family below the Android document tree
+ * selected by the user.  Native code never receives paths; it receives open
+ * descriptors through [MediaAttachment].
+ */
+data class EmulatorWorkspace(
+    val directoryName: String,
+    val configurationFileName: String,
+    val printerDirectoryName: String = "printer",
+)
+
+val V_PDP11_WORKSPACE = EmulatorWorkspace(
+    directoryName = "vPDP11",
+    configurationFileName = "pdp11config.ini",
+)
+
+data class ExecutionResult(
+    val instructions: Long,
+    val cycles: Long,
+    val state: ExecutionState,
+)
+
+enum class ExecutionState { RUNNING, WAITING, HALTED, FAULTED }
+
+/**
+ * Byte-oriented console port.  Android, Telnet, and the terminal renderer can
+ * share this one port without knowing which CPU produced the bytes.
+ */
+interface ConsolePort {
+    fun offerInput(bytes: ByteArray)
+    fun hasPendingInput(): Boolean
+    fun drainOutput(): ByteArray
+}
+
+/** Output-only line printer device, separate from terminal output. */
+interface LinePrinterPort {
+    fun drainOutput(): ByteArray
+}
+
+/**
+ * Drive slots use their native names: Z80 implementations may expose A–D;
+ * PDP-11 implementations may expose RK0, RL0, RP0, or DU0.  The media file
+ * name is resolved relative to [EmulatorWorkspace.directoryName] by Android.
+ */
+interface DrivePort {
+    fun mountedDrives(): List<MountedDrive>
+    fun mount(drive: String, fileName: String, readOnly: Boolean = false): DriveResult
+    fun dismount(drive: String): DriveResult
+}
+
+data class MountedDrive(
+    val drive: String,
+    val fileName: String,
+    val readOnly: Boolean,
+)
+
+data class DriveResult(val success: Boolean, val message: String = "")
+
+/** Generic operator-console functionality; architecture-specific controls can extend it. */
+interface FrontPanelPort {
+    fun snapshot(): FrontPanelSnapshot
+    fun setSwitchRegister(value: UShort)
+    fun reset()
+    fun halt()
+    fun run()
+}
+
+data class FrontPanelSnapshot(
+    val address: ULong,
+    val data: UShort,
+    val lights: ULong,
+    val running: Boolean,
+)
+
+/** Optional removable-media capability; drive naming/geometry stay machine-specific. */
+interface MediaController {
+    fun replaceMedia(media: List<MediaAttachment>): Boolean
+}
+
+data class MediaAttachment(
+    val slot: String,
+    val fileDescriptor: Int?,
+    val readOnly: Boolean = false,
+)

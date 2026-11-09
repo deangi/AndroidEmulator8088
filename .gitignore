@@ -1,0 +1,12 @@
+.gradle/
+.kotlin/
+.idea/
+.run/
+local.properties
+build/
+app/build/
+*.iml
+.cxx/
+externalNativeBuild/
+/OnDeviceFolder/*
+!/OnDeviceFolder/pdpconfig-rt11-5.ini
