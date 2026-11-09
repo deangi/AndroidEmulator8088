@@ -1,13 +1,10 @@
-import java.time.LocalDate
-import java.time.ZoneOffset
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-val appVersion = "1.7.0"
-val buildDateUtc = LocalDate.now(ZoneOffset.UTC).toString()
+val appVersion = "0.2.1"
+val buildDateUtc = "2026-11-08"
 
 android {
     namespace = "com.deangi.androidpdp11"
@@ -17,7 +14,7 @@ android {
         applicationId = "com.deangi.androidpdp11"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
+        versionCode = 201
         versionName = appVersion
 
         buildConfigField("String", "APP_VERSION", "\"$appVersion\"")

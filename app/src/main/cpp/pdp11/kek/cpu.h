@@ -1,0 +1,241 @@
+// (C) 2018-2026 by Folkert van Heusden
+// Released under MIT license
+
+#pragma once
+
+#include "gen.h"
+#if IS_POSIX
+#include <ArduinoJson.h>
+#endif
+#include <array>
+#include <cassert>
+#include <condition_variable>
+#include <csetjmp>
+#include <mutex>
+#include <optional>
+#include <set>
+#include <stdint.h>
+#include <unordered_map>
+#include <vector>
+
+
+class breakpoint;
+class bus;
+class mmu;
+
+constexpr const int      max_stacktrace_depth = 16;
+constexpr const uint16_t B16_MSBSET = 0x8000;
+constexpr const uint32_t B32_MSBSET = 0x80000000;
+constexpr const uint32_t B32_MSWSET = 0xffff0000;
+constexpr const uint64_t B64_MSWSET = 0xffffffff00000000ll;
+
+typedef struct {
+	word_mode_t    word_mode;
+	d_i_space_t    space;
+
+	bool           is_addr;
+	union {
+		uint16_t       addr;
+		int            reg;
+	};
+
+	uint16_t       value;
+	bool           stack_ref;
+} gam_rc_t;
+
+class cpu
+{
+private:
+	uint16_t regs0_5[2][6]; // R0...5, selected by bit 11 in PSW, 
+	uint16_t sp[3 + 1]; // stackpointers, MF../MT.. select via 12/13 from PSW, others via 14/15
+	uint16_t pc                 { 0     };
+	uint16_t psw                { 0     };
+	uint16_t fpsr               { 0     };
+	uint16_t fp_fec             { 0     };
+	uint16_t fp_fea             { 0     };
+	uint16_t fp_ac[6][4]        {       };
+	uint16_t stack_limit_register { 0 };  // 11/70 reset clears SLR; zones are SLR+0340/0400
+	int      processing_trap_depth { 0  };
+	std::optional<int> delayed_trap {   };  // invoked after completion of the instruction
+	int      kw11l_counter      { 0     };
+	bool     wait_stuck         { false };
+	bool     waiting            { false };
+	bool     instruction_active { false };
+	uint16_t instruction_pc     { 0     };
+	std::optional<uint16_t> trap_pc_override { };
+	bool     last_instruction_valid { false };
+	uint16_t last_instruction_pc    { 0     };
+	uint16_t last_instruction_word  { 0     };
+	uint32_t last_instruction_phys  { 0     };
+	bool     previous_instruction_valid { false };
+	uint16_t previous_instruction_pc    { 0     };
+	uint16_t previous_instruction_word  { 0     };
+	uint32_t previous_instruction_phys  { 0     };
+	uint64_t trap_counter       { 0     };
+	std::unordered_map<uint16_t, uint32_t> trap_counts;
+	uint64_t instructions_executed { 0  };
+
+	// vector, 8 levels
+	std::array<std::set<uint16_t>, 8> queued_interrupts;
+	abool        any_queued_interrupts { false };
+#if defined(FREERTOS)
+	SemaphoreHandle_t       qi_lock { xSemaphoreCreateBinary() };
+	QueueHandle_t           qi_q    { xQueueCreate(16, 1)      };
+#else
+	mutable std::mutex       qi_lock;
+	std::condition_variable qi_cv;
+#endif
+
+	std::unordered_map<int, breakpoint *> breakpoints;
+	int                     bp_nr       { 0 };
+
+	bus *const b    { nullptr };
+	mmu *const mmu_ { nullptr };
+
+	kek_event_t *const event { nullptr };
+	console     *cnsl        { nullptr };
+
+	// Non-exception abort of the current instruction / trap stacking.
+	// Hot path uses setjmp in step_impl; throw was too expensive on ESP32-S3.
+	jmp_buf *abort_env_ { nullptr };
+
+	bool     check_pending_interrupts() const;  // needs the 'qi_lock'-lock
+	template <bool Diagnostic>
+	bool     step_impl();
+
+	uint32_t shifter(uint32_t value, int shift, bool is32b);
+
+	uint16_t add_register(const int nr, const uint16_t value);
+	void     add_to_MMR1(const int reg, const int delta);
+	bool     check_stack_limit_write(const gam_rc_t & g);
+
+	gam_rc_t getGAM(const uint8_t mode, const uint8_t reg, const word_mode_t word_mode, const bool read_value = true);
+	gam_rc_t getGAMAddress(const uint8_t mode, const int reg, const word_mode_t word_mode);
+	bool     putGAM(const gam_rc_t & g, const uint16_t value); // returns false when flag registers should not be updated
+	int      fp_word_count() const;
+	void     fp_set_fpsr_nz(const int ac);
+	bool     fp_get_operand_address(const uint8_t mode, const uint8_t reg, const int words, uint16_t *addr);
+	bool     fp_read_operand(const uint8_t mode, const uint8_t reg, uint16_t *words, const int count);
+	bool     fp_write_operand(const uint8_t mode, const uint8_t reg, const uint16_t *words, const int count);
+	double   fp_to_double(const uint16_t *words) const;
+	void     double_to_fp(double value, uint16_t *words) const;
+
+	std::optional<bool> conditional_branch_instructions_evaluate(const uint16_t instr) const;
+	bool double_operand_instructions(const uint16_t instr);
+	bool additional_double_operand_instructions(const uint16_t instr);
+	bool single_operand_instructions(const uint16_t instr);
+	bool floating_point_instructions(const uint16_t instr);
+	bool conditional_branch_instructions(const uint16_t instr);
+	bool condition_code_operations(const uint16_t instr);
+	bool jsr_instruction(const uint16_t instr);
+	bool misc_operations(const uint16_t instr);
+
+	struct operand_parameters {
+		std::string operand;
+		int         length;
+		int         instruction_part;
+		uint16_t    work_value;
+		bool        valid;
+		std::optional<std::string> error;
+	};
+
+	operand_parameters addressing_to_string(const uint8_t mode_register, const uint16_t pc, const word_mode_t word_mode) const;
+	uint16_t peek_dst(const int mode, const int reg, const uint16_t pc, const word_mode_t word_mode) const;
+
+public:
+	explicit cpu(bus *const b, kek_event_t *const event);
+	~cpu();
+
+	void set_console(console *const cnsl) { this->cnsl = cnsl; }
+
+#if IS_POSIX
+	JsonDocument serialize();
+	static cpu *deserialize(const JsonVariantConst j, bus *const b, kek_event_t *const event);
+#endif
+
+	std::optional<std::pair<breakpoint &, const std::string> > check_breakpoint();
+	int                         set_breakpoint(breakpoint *const bp);
+	bool                        remove_breakpoint(const int bp_id);
+	std::unordered_map<int, breakpoint *> list_breakpoints();
+
+	void disassemble(void) const;
+	std::unordered_map<std::string, std::vector<std::string> > disassemble(const uint16_t addr) const;
+
+	bus *getBus() { return b; }
+
+	void     reset();
+	bool     step ();
+	bool     step_fast();
+	bool     step_diagnostic();
+	bool     get_last_instruction(uint16_t *address, uint16_t *opcode) const;
+	bool     get_last_instruction_physical(uint32_t *address) const;
+	bool     get_previous_instruction(uint16_t *address, uint16_t *opcode) const;
+	bool     get_previous_instruction_physical(uint32_t *address) const;
+
+	uint64_t get_instructions_executed_count() const { return instructions_executed; }
+	bool     is_waiting() const { return waiting; }
+	uint32_t calc_instruction_duration(const uint16_t pc) const;  // nanoseconds
+	uint64_t get_trap_counter() const { return trap_counter; }
+	auto     get_trap_counts() const { return trap_counts; }
+
+	void     push_stack(const uint16_t v);
+	uint16_t pop_stack();
+
+	void init_interrupt_queue();
+	void queue_interrupt(const uint8_t level, const uint16_t vector);
+	void unqueue_interrupt(const uint8_t level, const uint16_t vector);
+	bool has_queued_interrupt(const uint8_t level, const uint16_t vector);
+	std::array<std::set<uint16_t>, 8> get_queued_interrupts() const;
+	bool check_if_interrupts_pending() const;
+	void execute_any_pending_interrupt();
+
+	void trap(uint16_t vector, const int new_ipl = -1, const bool is_interrupt = false);
+	void trap_at_current_pc(uint16_t vector);
+	[[noreturn]] void abort_instruction(int code);
+
+	bool getPSW_c() const;
+	bool getPSW_v() const;
+	bool getPSW_z() const;
+	bool getPSW_n() const;
+	int  getPSW_spl() const;
+	bool getBitPSW(const int bit) const;
+	int  getPSW_runmode() const { return psw >> 14; };
+	int  getPSW_prev_runmode() const { return (psw >> 12) & 3; };
+	bool get_register_set() const { return psw & 04000; }
+
+	void setPSW_c(const bool v);
+	void setPSW_v(const bool v);
+	void setPSW_z(const bool v);
+	void setPSW_n(const bool v);
+	void setPSW_spl(const int v);
+	void setBitPSW(const int bit, const bool v);
+	void setPSW_flags_nzv(const uint16_t value, const word_mode_t word_mode);
+
+	uint16_t getPSW() const { return psw; }
+	void     setPSW(const uint16_t v, const bool limited);
+
+	uint16_t getFPSR() const { return fpsr; }
+	void     setFPSR(const uint16_t v) { fpsr = v & 0147777; }
+
+	uint16_t get_stack_limit_register() { return stack_limit_register; }
+	void     set_stack_limit_register(const uint16_t v) { stack_limit_register = v; }
+
+	uint16_t get_stackpointer(const int which) const { assert(which >= 0 && which < 4); return sp[which]; }
+	uint16_t getPC() const { return pc; }
+	void set_stackpointer(const int which, const uint16_t value) { assert(which >= 0 && which < 4); sp[which] = value; }
+	void setPC(const uint16_t value) { pc = value; }
+
+	void set_register(const int nr, const uint16_t value);
+	void set_registerLowByte(const int nr, const word_mode_t word_mode, const uint16_t value);
+	// used by 'main' for json-validation
+	void lowlevel_register_set(const uint8_t set, const uint8_t reg, const uint16_t value);
+	void lowlevel_register_sp_set(const uint8_t set, const uint16_t value);
+	uint16_t lowlevel_register_get(const uint8_t set, const uint8_t reg) const;
+	void lowlevel_psw_set(const uint16_t value) { psw = value; }
+	uint16_t lowlevel_register_sp_get(const uint8_t nr) const { return sp[nr]; }
+
+	uint16_t  get_register        (const int nr) const;
+	uint16_t *get_register_pointer(const int nr);
+
+	bool put_result(const gam_rc_t & g, const uint16_t value);
+};

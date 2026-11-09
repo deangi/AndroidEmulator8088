@@ -5,11 +5,16 @@ RT-11 V5.4F on an RK05 (`RK0`) disk.
 
 ## Status
 
-Phase 1 is in progress. This repository is an independently named Android
+Phase 2 is in progress. This repository is an independently named Android
 Studio project created from the Android VZ80 host framework. Its Android
 terminal, foreground-service, Telnet, and document-storage scaffolding are
 being retained; the inherited Z80 CPU and CP/M-specific disk implementation
 are temporary and will be replaced in the PDP-11 engine phases.
+
+The current Phase 2 build is `0.2.1` (version code 201), dated 2026-11-08.
+Phase numbers use the minor version (`0.1.x`, `0.2.x`, and so on); patch
+numbers advance for each build within a phase. Version `1.0.0` is reserved
+for a near-working prototype.
 
 The PDP-11 target workspace is `vPDP11` under the document tree selected by
 the user. Disk images are deliberately not included in the repository or APK.
