@@ -129,7 +129,9 @@ class EmulatorSession(context: Context) : AutoCloseable {
                 "${AppBuildInfo.displayName}\r\nEmulator: ${if (emulatorRunning.value) "running" else "stopped"}\r\nProfile: ${bootedProfile.value?.fileName ?: selectedProfile.value?.fileName ?: "none"}\r\n"
             }
             "drives" -> runBlocking(Dispatchers.Main.immediate) {
-                listOf("A", "B", "C", "D").joinToString("") { "${it}: ${bootedProfile.value?.drives?.get(it) ?: "(empty)"}\r\n" }
+                bootedProfile.value?.drives?.toSortedMap()?.entries?.joinToString("") { (drive, image) ->
+                    "$drive: $image\r\n"
+                } ?: "No PDP-11 drives are mounted.\r\n"
             }
             "mount", "dismount" -> {
                 val isMount = parts[0].equals("mount", ignoreCase = true)
@@ -153,7 +155,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
                     }
                 }
             }
-            "pwd" -> "/vZ80\r\n"
+            "pwd" -> "/vPDP11\r\n"
             "ls" -> if (parts.size == 1) storage.shellList() else "usage: ls\r\n"
             "cat" -> if (parts.size == 2) storage.shellRead(parts[1]) else "usage: cat <file>\r\n"
             "cp" -> {

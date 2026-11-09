@@ -409,7 +409,7 @@ class Vz80StorageRepository(private val context: Context) {
                 }
             }
         } }
-        val drives = values.filterKeys { it.startsWith("disks.") }
+        val drives = values.filterKeys { it.startsWith("disks.") && it != "disks.boot" }
             .mapKeys { (key, _) -> key.removePrefix("disks.").uppercase() }
             .filter { (_, value) -> value.isNotBlank() }
         return Vz80Profile(file.name ?: "pdpconfig.ini", values["system.title"] ?: file.name.orEmpty(), values["console.terminal"] ?: "adm3a", values["disks.boot"]?.uppercase() ?: "RK0", drives, bootText)

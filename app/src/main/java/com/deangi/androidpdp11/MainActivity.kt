@@ -508,8 +508,10 @@ private fun StatusArea(
                 add("  Telnet endpoint: ${LocalNetworkInfo.ipv4Address()}:$port")
             }
             add("")
-            add("Mounted drives:")
-            listOf("A", "B", "C", "D").forEach { drive -> add("  $drive: ${bootedProfile?.drives?.get(drive) ?: "(empty)"}") }
+            add("PDP-11 configured drives:")
+            val drives = bootedProfile?.drives?.toSortedMap().orEmpty()
+            if (drives.isEmpty()) add("  (none)")
+            else drives.forEach { (drive, image) -> add("  $drive: $image") }
             if (diskError.isNotEmpty()) { add(""); add("Disk error: $diskError") }
         }
         Adm3aTerminal().apply { feed(lines.joinToString("\r\n").encodeToByteArray()) }

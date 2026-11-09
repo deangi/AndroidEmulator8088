@@ -11,7 +11,7 @@ terminal, foreground-service, Telnet, and document-storage scaffolding are
 being retained; the inherited Z80 CPU and CP/M-specific disk implementation
 are temporary and will be replaced in the PDP-11 engine phases.
 
-The current Phase 3 build is `0.3.2` (version code 302), dated 2026-11-09.
+The current Phase 3 build is `0.3.3` (version code 303), dated 2026-11-09.
 Phase numbers use the minor version (`0.1.x`, `0.2.x`, and so on); patch
 numbers advance for each build within a phase. Version `1.0.0` is reserved
 for a near-working prototype.
@@ -52,6 +52,17 @@ open Android file descriptors rather than host paths.
 The source engine is the vendored `kek` PDP-11/70 core used by the ESP32
 `vpdp1170` project. The initial Android device set is KL11 console, RK05,
 and the minimum clock/front-panel support necessary to boot RT-11.
+
+## Phase 3 task list
+
+- [x] Boot RT-11 from a selected RK05 disk image through an Android file descriptor.
+- [x] Report PDP-11 drive names (such as `RK0` and `RL0`) in system status.
+- [ ] Connect the PDP-11 line-printer device to Android printer capture in `vPDP11/printers`.
+  This will implement the standard `EmulatorCore.linePrinter: LinePrinterPort?`
+  contract already shared by emulator engines, so printer bytes remain separate
+  from the console/Telnet stream.
+- [ ] Add PDP-11 drive mount/dismount controls using native PDP device names.
+- [ ] Add front-panel support and additional PDP-11 disk controllers.
 
 ## Build
 
