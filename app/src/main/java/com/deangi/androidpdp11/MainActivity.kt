@@ -131,7 +131,11 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
             verticalArrangement = Arrangement.Top,
         ) {
             Text("AndroidEmulatorPdp11", color = Color(0xFF55FF8A), style = MaterialTheme.typography.headlineMedium)
-            Text("CP/M emulator console", color = Color(0xFFB4C8BA), modifier = Modifier.padding(top = 6.dp))
+            Text("PDP-11 console", color = Color(0xFFB4C8BA), modifier = Modifier.padding(top = 6.dp))
+
+            Button(onClick = session::startPdp11ConsoleTest, modifier = Modifier.padding(top = 12.dp)) {
+                Text("Run PDP-11 console test")
+            }
 
             TerminalDisplay(
                 terminal = terminal,

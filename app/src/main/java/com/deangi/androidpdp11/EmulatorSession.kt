@@ -38,13 +38,15 @@ class EmulatorSession(context: Context) : AutoCloseable {
     val terminal = Adm3aTerminal().apply { showCornerTestPattern() }
     val printerCapture = storage.printerCapture()
     val emulator = NativeEmulator()
+    private val pdp11TestCore = Pdp11NativeCore()
+    @Volatile private var activeConsoleCore: ConsoleExecutionCore = emulator
     val telnet = TelnetConsoleServer()
     val inputQueues = ConsoleInputQueues()
     val bootInput = BootInputController(inputQueues::enqueueLocal)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val coordinator = EmulatorSliceCoordinator(
-        runInstructions = emulator::runInstructions,
-        services = listOf(ConsoleInputSliceService(inputQueues, emulator::hasPendingConsoleInput, emulator::enqueueInput)),
+        runInstructions = { activeConsoleCore.runInstructions(it) },
+        services = listOf(ConsoleInputSliceService(inputQueues, { activeConsoleCore.hasPendingConsoleInput() }, { activeConsoleCore.enqueueInput(it) })),
     )
     val console = ConsoleIoRouter(
         localInput = inputQueues::enqueueLocal,
@@ -58,7 +60,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
         scope.launch {
             while (isActive) {
                 if (emulatorRunning.value) withContext(Dispatchers.Default) { coordinator.runSlice() }
-                val output = emulator.drainConsole()
+                val output = activeConsoleCore.drainConsole()
                 bootInput.poll(SystemClock.elapsedRealtime(), output.isNotEmpty())
                 console.publishOutput(output)
                 delay(if (emulatorRunning.value) 1 else 16)
@@ -103,6 +105,18 @@ class EmulatorSession(context: Context) : AutoCloseable {
                 delay(1000)
             }
         }
+    }
+
+    fun startPdp11ConsoleTest() {
+        emulatorRunning.value = false
+        inputQueues.clear()
+        bootedProfile.value = null
+        terminal.reset()
+        activeConsoleCore = pdp11TestCore
+        Pdp11ConsoleProgram.load(pdp11TestCore)
+        diskError.value = "PDP-11 console test (no disk mounted)"
+        terminalVersion.intValue++
+        emulatorRunning.value = true
     }
 
     private fun shellCommand(input: String): String {
@@ -175,6 +189,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
         telnet.close()
         runCatching { printerCapture.close() }
         emulator.close()
+        pdp11TestCore.close()
     }
 }
 
