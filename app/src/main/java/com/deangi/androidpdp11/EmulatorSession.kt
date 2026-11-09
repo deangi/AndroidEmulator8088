@@ -114,7 +114,8 @@ class EmulatorSession(context: Context) : AutoCloseable {
         terminal.reset()
         activeConsoleCore = pdp11TestCore
         Pdp11ConsoleProgram.load(pdp11TestCore)
-        diskError.value = "PDP-11 console test (no disk mounted)"
+        diskError.value = ""
+        console.publishOutput("[PDP-11 console test: no disk mounted]\r\n".encodeToByteArray())
         terminalVersion.intValue++
         emulatorRunning.value = true
     }
