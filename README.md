@@ -5,13 +5,13 @@ RT-11 V5.4F on an RK05 (`RK0`) disk.
 
 ## Status
 
-Phase 2 is in progress. This repository is an independently named Android
+Phase 3 is in progress. This repository is an independently named Android
 Studio project created from the Android VZ80 host framework. Its Android
 terminal, foreground-service, Telnet, and document-storage scaffolding are
 being retained; the inherited Z80 CPU and CP/M-specific disk implementation
 are temporary and will be replaced in the PDP-11 engine phases.
 
-The current Phase 2 build is `0.2.11` (version code 211), dated 2026-11-09.
+The current Phase 3 build is `0.3.0` (version code 300), dated 2026-11-09.
 Phase numbers use the minor version (`0.1.x`, `0.2.x`, and so on); patch
 numbers advance for each build within a phase. Version `1.0.0` is reserved
 for a near-working prototype.
@@ -61,5 +61,8 @@ Open this directory in Android Studio, or run:
 ./gradlew :app:assembleDebug
 ```
 
-The initial build validates the Android host baseline; it does not yet claim
-PDP-11 guest boot support.
+Phase 3 removes the temporary console diagnostic and begins the RT-11 boot
+path: selected `vPDP11` storage is parsed for `pdpconfig*.ini`, and the
+configured `rk0` disk is opened by descriptor and attached to the RK05
+controller. Drive editing, other PDP-11 controllers, and printer output are
+still staged work.

@@ -19,6 +19,7 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     fun zeroMemory() = withHandle { nativeZeroMemory(it) }
     fun clearMemory(value: Byte = 0) = withHandle { nativeClearMemory(it, value) }
     fun load(address: Int, bytes: ByteArray) = withHandle { nativeLoad(it, address, bytes) }
+    fun bootRk05(descriptor: Int): Boolean = withHandle { nativeBootRk05(it, descriptor) }
     override fun enqueueInput(value: Byte) = withHandle { nativeEnqueueInput(it, value) }
     override fun hasPendingConsoleInput(): Boolean = withHandle { nativeHasPendingConsoleInput(it) }
     override fun drainConsole(): ByteArray = withHandle { nativeDrainConsole(it) }
@@ -43,6 +44,7 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private external fun nativeClearMemory(handle: Long, value: Byte)
     private external fun nativeZeroMemory(handle: Long)
     private external fun nativeLoad(handle: Long, address: Int, bytes: ByteArray)
+    private external fun nativeBootRk05(handle: Long, descriptor: Int): Boolean
     private external fun nativeEnqueueInput(handle: Long, value: Byte)
     private external fun nativeHasPendingConsoleInput(handle: Long): Boolean
     private external fun nativeDrainConsole(handle: Long): ByteArray

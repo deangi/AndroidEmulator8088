@@ -131,11 +131,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
             verticalArrangement = Arrangement.Top,
         ) {
             Text("AndroidEmulatorPdp11", color = Color(0xFF55FF8A), style = MaterialTheme.typography.headlineMedium)
-            Text("PDP-11 console", color = Color(0xFFB4C8BA), modifier = Modifier.padding(top = 6.dp))
-
-            Button(onClick = session::startPdp11ConsoleTest, modifier = Modifier.padding(top = 12.dp)) {
-                Text("Run PDP-11 console test")
-            }
+            Text("PDP-11/70 console", color = Color(0xFFB4C8BA), modifier = Modifier.padding(top = 6.dp))
 
             TerminalDisplay(
                 terminal = terminal,
@@ -155,7 +151,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                     val booted = bootedProfile
                     if (booted != null) {
                         emulatorRunning = false
-                        runCatching { storage.bootFloppies(booted, emulator) }
+                        runCatching { session.bootPdp11(booted) }
                             .onSuccess {
                                 inputQueues.clear(); bootInput.arm(booted.bootText)
                                 diskError = ""; terminal.reset(); terminalVersion++; emulatorRunning = true
@@ -169,7 +165,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                 onBoot = {
                     profileSelectorOpen = true
                 },
-                canManageDrives = bootedProfile != null && emulatorRunning,
+                canManageDrives = false,
                 onManageDrives = { snapshot = storage.snapshot(); drivesOpen = true },
                 onPrinter = {
                     printerDialogOpen = true
@@ -279,7 +275,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                 profileSelectorOpen = false
                 emulatorRunning = false
                 bootedProfile = null
-                runCatching { storage.bootFloppies(profile, emulator) }
+                runCatching { session.bootPdp11(profile) }
                     .onSuccess {
                         inputQueues.clear(); bootInput.arm(profile.bootText)
                         terminal.reset(); terminalVersion++
@@ -385,7 +381,7 @@ private fun ConfigEditorDialog(
         text = {
             Column {
                 if (documents.isEmpty()) {
-                    Text("No z80config*.ini or wificonfig*.ini files were found.")
+                    Text("No pdpconfig*.ini or wificonfig*.ini files were found.")
                 } else {
                     Row {
                         documents.forEach { document ->
@@ -423,7 +419,7 @@ private fun BootProfileDialog(
         text = {
             Column {
                 if (profiles.isEmpty()) {
-                    Text("No z80config*.ini files were found in vZ80.")
+                    Text("No pdpconfig*.ini files were found in vPDP11.")
                 } else {
                     profiles.forEach { profile ->
                         TextButton(onClick = { onSelect(profile) }, modifier = Modifier.fillMaxWidth()) {

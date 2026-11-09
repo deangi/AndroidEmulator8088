@@ -4,6 +4,9 @@
 #include <cstring>
 
 #include "tty.h"
+#include "disk_backend_file.h"
+#include "loaders.h"
+#include "rk05.h"
 
 namespace pdp11android {
 
@@ -91,6 +94,33 @@ void Engine::load(const uint32_t address, const uint8_t* bytes, const size_t cou
 {
     if (bytes && count)
         machine.write_physical_block(address, bytes, static_cast<uint32_t>(count));
+}
+
+bool Engine::bootRk05(const int descriptor)
+{
+    if (descriptor < 0)
+        return false;
+
+    // Android exposes selected document-tree images as file descriptors, not
+    // stable paths. /proc/self/fd lets the portable POSIX backend duplicate
+    // that open image without granting the guest arbitrary host-path access.
+    const auto fdPath = "/proc/self/fd/" + std::to_string(descriptor);
+    auto* image = new disk_backend_file(fdPath);
+    if (!image->begin(false)) {
+        delete image;
+        return false;
+    }
+
+    auto* controller = new rk05(&machine, console.get_disk_read_activity_flag(), console.get_disk_write_activity_flag());
+    controller->access_disk_backends()->push_back(image);
+    controller->begin();
+    machine.add_rk05(controller);
+
+    const auto entry = set_boot_loader(&machine, BL_RK05);
+    if (!entry.has_value())
+        return false;
+    reset(*entry);
+    return true;
 }
 
 void Engine::enqueueInput(const uint8_t value) { console.enqueue_input(value); }

@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import android.os.ParcelFileDescriptor
 import com.deangi.androidpdp11.NativeEmulator
+import com.deangi.androidpdp11.Pdp11NativeCore
 import com.deangi.androidpdp11.io.PrinterCapture
 
 internal const val DEFAULT_TELNET_PORT = 2323
@@ -287,6 +288,25 @@ class Vz80StorageRepository(private val context: Context) {
         mountedNames = profile.drives.values.toSet()
     } }
 
+    /**
+     * Phase-3 RT-11 path: attach the configured RK0 image to the PDP-11
+     * RK05 controller.  The native core duplicates the descriptor before
+     * this method returns, so Android retains no host path in native code.
+     */
+    fun bootPdp11Rk05(profile: Vz80Profile, emulator: Pdp11NativeCore) = synchronized(mediaLock) {
+        val imageName = profile.drives["RK0"]?.trim()?.trimStart('/')
+            ?: throw IllegalArgumentException("RT-11 profile has no rk0 image")
+        require(imageName.endsWith(".dsk", ignoreCase = true)) { "RK0 image must end in .dsk" }
+        val root = requireNotNull(vz80Directory()) { "vPDP11 storage is unavailable" }
+        val image = requireNotNull(root.findFile(imageName)) { "Disk image not found: $imageName" }
+        require(image.isFile) { "Not a disk image: $imageName" }
+        require(image.length() >= 512) { "Disk image is too small: $imageName" }
+        requireNotNull(context.contentResolver.openFileDescriptor(image.uri, "rw")) { "Cannot open disk image: $imageName" }.use { descriptor ->
+            check(emulator.bootRk05(descriptor.fd)) { "Could not attach RK0 image" }
+        }
+        mountedNames = setOf(imageName)
+    }
+
     fun replaceMountedDisks(profile: Vz80Profile, emulator: NativeEmulator) = synchronized(mediaLock) { withDiskImages(profile) { fds, hddMask ->
         check(emulator.replaceDisks(fds, hddMask)) { emulator.takeDiskError().ifEmpty { "Could not mount disk images" } }
         mountedNames = profile.drives.values.toSet()
@@ -374,7 +394,7 @@ class Vz80StorageRepository(private val context: Context) {
 
     private fun scan(directory: DocumentFile): Vz80StorageSnapshot {
         val files = directory.listFiles().filter { it.isFile }
-        val profiles = files.filter { it.name?.lowercase()?.let { name -> name == "z80config.ini" || name.startsWith("z80config-") && name.endsWith(".ini") } == true }
+        val profiles = files.filter { it.name?.lowercase()?.let { name -> name == "pdpconfig.ini" || name.startsWith("pdpconfig-") && name.endsWith(".ini") } == true }
             .map(::parseProfile).sortedBy { it.fileName.lowercase() }
         val images = files.mapNotNull { it.name }.filter { it.endsWith(".dsk", true) || it.endsWith(".hdd", true) }.sortedBy(String::lowercase)
         val telnetPort = files.firstOrNull { it.name.equals("wificonfig.ini", ignoreCase = true) }
@@ -400,8 +420,10 @@ class Vz80StorageRepository(private val context: Context) {
                 }
             }
         } }
-        val drives = listOf("a", "b", "c", "d").mapNotNull { drive -> values["disks.$drive"]?.takeIf(String::isNotEmpty)?.let { drive.uppercase() to it } }.toMap()
-        return Vz80Profile(file.name ?: "z80config.ini", values["system.title"] ?: file.name.orEmpty(), values["console.terminal"] ?: "adm3a", values["disks.boot"]?.uppercase() ?: "A", drives, bootText)
+        val drives = values.filterKeys { it.startsWith("disks.") }
+            .mapKeys { (key, _) -> key.removePrefix("disks.").uppercase() }
+            .filter { (_, value) -> value.isNotBlank() }
+        return Vz80Profile(file.name ?: "pdpconfig.ini", values["system.title"] ?: file.name.orEmpty(), values["console.terminal"] ?: "adm3a", values["disks.boot"]?.uppercase() ?: "RK0", drives, bootText)
     }
 
     private fun parseTelnetPort(file: DocumentFile): Int {
@@ -422,7 +444,7 @@ class Vz80StorageRepository(private val context: Context) {
 
     private fun isConfigFile(name: String): Boolean {
         val lower = name.lowercase()
-        return (lower == "z80config.ini" || lower.startsWith("z80config-") ||
+        return (lower == "pdpconfig.ini" || lower.startsWith("pdpconfig-") ||
             lower == "wificonfig.ini" || lower.startsWith("wificonfig-")) && lower.endsWith(".ini")
     }
 
@@ -430,7 +452,7 @@ class Vz80StorageRepository(private val context: Context) {
         const val MAX_FLOPPY_IMAGE_BYTES = 16 * 1024 * 1024
         const val MAX_CPM_FILE_BYTES = 241 * 1024
         const val TREE_URI_KEY = "tree_uri"
-        const val VZ80_DIRECTORY = "vZ80"
+        const val VZ80_DIRECTORY = "vPDP11"
         const val SEED_DIRECTORY = "seed"
     }
 }

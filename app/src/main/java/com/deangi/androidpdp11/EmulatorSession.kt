@@ -38,8 +38,8 @@ class EmulatorSession(context: Context) : AutoCloseable {
     val terminal = Adm3aTerminal().apply { showCornerTestPattern() }
     val printerCapture = storage.printerCapture()
     val emulator = NativeEmulator()
-    private val pdp11TestCore = Pdp11NativeCore()
-    @Volatile private var activeConsoleCore: ConsoleExecutionCore = emulator
+    private val pdp11Core = Pdp11NativeCore()
+    @Volatile private var activeConsoleCore: ConsoleExecutionCore = pdp11Core
     val telnet = TelnetConsoleServer()
     val inputQueues = ConsoleInputQueues()
     val bootInput = BootInputController(inputQueues::enqueueLocal)
@@ -69,7 +69,6 @@ class EmulatorSession(context: Context) : AutoCloseable {
         scope.launch {
             while (isActive) {
                 telnetStatus.value = TelnetStatus(telnet.listeningPort, telnet.clientAddress, telnet.lastError)
-                emulator.takeDiskError().takeIf { it.isNotEmpty() }?.let { diskError.value = it }
                 delay(250)
             }
         }
@@ -107,20 +106,16 @@ class EmulatorSession(context: Context) : AutoCloseable {
         }
     }
 
-    fun startPdp11ConsoleTest() {
+    fun bootPdp11(profile: Vz80Profile) {
         emulatorRunning.value = false
         inputQueues.clear()
         bootedProfile.value = null
         terminal.reset()
-        activeConsoleCore = pdp11TestCore
-        Pdp11ConsoleProgram.load(pdp11TestCore)
-        // Keep the diagnostic PDP-11 console distinct from any concurrently
-        // installed AndroidVZ80/CP-M app, which normally listens on 2323.
-        telnet.start(PDP11_TEST_TELNET_PORT, console::acceptTelnetInput)
-        telnetRequested.value = true
-        telnetManuallyStopped.value = false
+        activeConsoleCore = pdp11Core
+        storage.bootPdp11Rk05(profile, pdp11Core)
         diskError.value = ""
-        console.publishOutput("[PDP-11 console test: no disk mounted; Telnet port $PDP11_TEST_TELNET_PORT]\r\n".encodeToByteArray())
+        bootedProfile.value = profile
+        console.publishOutput("[Booting ${profile.title.ifBlank { profile.fileName }} from RK0]\r\n".encodeToByteArray())
         terminalVersion.intValue++
         emulatorRunning.value = true
     }
@@ -195,10 +190,8 @@ class EmulatorSession(context: Context) : AutoCloseable {
         telnet.close()
         runCatching { printerCapture.close() }
         emulator.close()
-        pdp11TestCore.close()
+        pdp11Core.close()
     }
 }
 
 data class TelnetStatus(val port: Int? = null, val clientAddress: String? = null, val error: String? = null)
-
-private const val PDP11_TEST_TELNET_PORT = 2324
