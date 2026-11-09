@@ -2,13 +2,51 @@
 
 #include <algorithm>
 #include <cstring>
+#include <unistd.h>
 
 #include "tty.h"
-#include "disk_backend_file.h"
+#include "disk_backend.h"
 #include "loaders.h"
 #include "rk05.h"
 
 namespace pdp11android {
+
+namespace {
+
+// Android's Storage Access Framework gives us an already-authorized file
+// descriptor.  Keep the native RK05 backend descriptor-based; reopening a
+// /proc/self/fd path is not permitted on every Android build.
+class AndroidFdDiskBackend final : public disk_backend {
+public:
+    explicit AndroidFdDiskBackend(const int source) : source(source) {}
+    ~AndroidFdDiskBackend() override { if (fd >= 0) close(fd); }
+
+    std::string get_identifier() const override { return "android-fd"; }
+    void show_state(console* const cnsl) const override { cnsl->put_string_lf("Android document disk"); }
+
+    bool begin(const bool) override {
+        fd = dup(source);
+        if (fd < 0) return false;
+        const auto end = lseek(fd, 0, SEEK_END);
+        if (end < 0) return false;
+        size = static_cast<uint64_t>(end);
+        return true;
+    }
+
+    bool read(const off_t offset, const size_t count, uint8_t* const target, const size_t) override {
+        return pread(fd, target, count, offset) == static_cast<ssize_t>(count);
+    }
+
+    bool write(const off_t offset, const size_t count, const uint8_t* const sourceBytes, const size_t) override {
+        return pwrite(fd, sourceBytes, count, offset) == static_cast<ssize_t>(count);
+    }
+
+private:
+    const int source;
+    int fd { -1 };
+};
+
+} // namespace
 
 void AndroidConsole::put_char_ll(const char value)
 {
@@ -101,11 +139,7 @@ bool Engine::bootRk05(const int descriptor)
     if (descriptor < 0)
         return false;
 
-    // Android exposes selected document-tree images as file descriptors, not
-    // stable paths. /proc/self/fd lets the portable POSIX backend duplicate
-    // that open image without granting the guest arbitrary host-path access.
-    const auto fdPath = "/proc/self/fd/" + std::to_string(descriptor);
-    auto* image = new disk_backend_file(fdPath);
+    auto* image = new AndroidFdDiskBackend(descriptor);
     if (!image->begin(false)) {
         delete image;
         return false;
