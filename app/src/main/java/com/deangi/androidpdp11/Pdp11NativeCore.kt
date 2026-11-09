@@ -5,7 +5,7 @@ package com.deangi.androidpdp11
  * [NativeEmulator] until RT-11 drive mounting replaces the inherited CP/M
  * storage adapter.
  */
-class Pdp11NativeCore : AutoCloseable {
+class Pdp11NativeCore : ConsoleExecutionCore {
     private var handle = nativeCreate()
 
     val processorId: String get() = withHandle { nativeProcessorId(it) }

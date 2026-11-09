@@ -5,7 +5,7 @@ package com.deangi.androidpdp11
  * (terminal rendering, document storage, telnet, and service lifecycle) are
  * intentionally not represented here.
  */
-class NativeEmulator : AutoCloseable {
+class NativeEmulator : ConsoleExecutionCore {
     private var handle = nativeCreate()
 
     fun reset(entryPc: Int = 0) = withHandle { nativeReset(it, entryPc) }
