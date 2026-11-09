@@ -1,4 +1,5 @@
 #include "console.h"
+#include "tty.h"
 
 #include <cstdio>
 #include <tuple>
@@ -25,17 +26,20 @@ void console::stop_thread()
 
 bool console::poll_char()
 {
-    return false;
+	return !input_buffer.is_empty();
 }
 
 int console::get_char()
 {
-    return -1;
+	auto value = input_buffer.pop(0);
+	return value.has_value() ? uint8_t(value.value()) : -1;
 }
 
 std::optional<int> console::wait_char(const int)
 {
-    return {};
+	auto value = input_buffer.pop(1);
+	if (!value.has_value()) return {};
+	return uint8_t(value.value());
 }
 
 std::string console::read_line(const std::string& prompt, const explode_func_t&)
@@ -46,6 +50,14 @@ std::string console::read_line(const std::string& prompt, const explode_func_t&)
 
 void console::flush_input()
 {
+	input_buffer.clear();
+}
+
+void console::enqueue_input(const uint8_t value)
+{
+	input_buffer.push(char(value));
+	if (have_data_cb_notifier)
+		have_data_cb_notifier->notify_rx();
 }
 
 void console::emit_backspace()
@@ -54,12 +66,13 @@ void console::emit_backspace()
 
 void console::put_char(const char c)
 {
-    std::putchar(c);
+	put_char_ll(c);
 }
 
 void console::put_string(const std::string& what)
 {
-    std::fwrite(what.data(), 1, what.size(), stdout);
+	for (const char c : what)
+		put_char_ll(c);
 }
 
 void console::operator()()

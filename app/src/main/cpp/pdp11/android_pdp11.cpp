@@ -1,0 +1,89 @@
+#include "android_pdp11.h"
+
+#include <algorithm>
+#include <cstring>
+
+#include "tty.h"
+
+namespace pdp11android {
+
+void AndroidConsole::put_char_ll(const char value)
+{
+    std::lock_guard<std::mutex> lock(outputLock);
+    output.push_back(static_cast<uint8_t>(value));
+}
+
+void AndroidConsole::put_string_lf(const std::string& value)
+{
+    put_string(value);
+    put_char_ll('\n');
+}
+
+std::vector<uint8_t> AndroidConsole::drainOutput()
+{
+    std::lock_guard<std::mutex> lock(outputLock);
+    std::vector<uint8_t> result(output.begin(), output.end());
+    output.clear();
+    return result;
+}
+
+Engine::Engine()
+{
+    // 31 x 8 KiB is the upstream non-embedded PDP-11 default (248 KiB).
+    machine.set_memory_size(DEFAULT_N_PAGES);
+    auto* processor = new cpu(&machine, &stopEvent);
+    processor->set_console(&console);
+    machine.add_cpu(processor);
+    machine.add_tty(new tty(&console, &machine));
+    console.set_bus(&machine);
+    machine.init();
+}
+
+void Engine::reset(const uint16_t entryPc)
+{
+    machine.init();
+    machine.getCpu()->setPC(entryPc);
+}
+
+uint64_t Engine::runInstructions(const uint64_t count)
+{
+    const uint64_t before = machine.getCpu()->get_instructions_executed_count();
+    for (uint64_t index = 0; index < count; ++index) {
+        machine.getCpu()->step_fast();
+        if (auto* terminal = machine.getTty())
+            terminal->service_deferred();
+        if (stopEvent.load() != EVENT_NONE)
+            break;
+    }
+    return machine.getCpu()->get_instructions_executed_count() - before;
+}
+
+void Engine::setMemorySizeBytes(uint32_t bytes)
+{
+    constexpr uint32_t pageSize = 8192;
+    const uint32_t pages = std::clamp((bytes + pageSize - 1) / pageSize, 1u, 512u);
+    machine.set_memory_size(static_cast<int>(pages));
+    reset();
+}
+
+uint32_t Engine::memorySizeBytes() const { return machine.get_memory_size(); }
+
+void Engine::clearMemory(const uint8_t value)
+{
+    auto* ram = machine.getRAM();
+    if (!ram) return;
+    std::vector<uint8_t> clear(ram->get_memory_size(), value);
+    machine.write_physical_block(0, clear.data(), static_cast<uint32_t>(clear.size()));
+}
+
+void Engine::load(const uint32_t address, const uint8_t* bytes, const size_t count)
+{
+    if (bytes && count)
+        machine.write_physical_block(address, bytes, static_cast<uint32_t>(count));
+}
+
+void Engine::enqueueInput(const uint8_t value) { console.enqueue_input(value); }
+bool Engine::hasPendingInput() { return console.poll_char(); }
+std::vector<uint8_t> Engine::drainConsole() { return console.drainOutput(); }
+
+} // namespace pdp11android

@@ -3,6 +3,7 @@ project("androidpdp11")
 
 add_library(androidpdp11 SHARED
     native-lib.cpp
+    pdp11/android_pdp11.cpp
     core/portable_z80.cpp
     core/z80.c
 )
@@ -51,6 +52,9 @@ target_compile_options(pdp11core PRIVATE
     -include ${CMAKE_CURRENT_SOURCE_DIR}/pdp11/compat/kek_android_compat.h
     -Wall -Wextra
 )
+
+target_include_directories(androidpdp11 PRIVATE pdp11/kek pdp11)
+target_compile_definitions(androidpdp11 PRIVATE IS_POSIX=0)
 
 find_library(log-lib log)
 target_link_libraries(androidpdp11 PRIVATE pdp11core ${log-lib})

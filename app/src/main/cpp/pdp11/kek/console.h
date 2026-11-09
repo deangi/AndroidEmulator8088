@@ -96,6 +96,8 @@ public:
 	std::optional<int> wait_char(const int timeout_ms);
 	std::string  read_line(const std::string & prompt, const explode_func_t & ef = nullptr);
 	void         flush_input();
+	/** Host-only input injection used by Android and TCP console adapters. */
+	void         enqueue_input(const uint8_t value);
 	void         set_data_cb_notifier(auto notifier) { have_data_cb_notifier = notifier; }
 
 	void         enable_timestamp(const bool state) { timestamps = state; }
