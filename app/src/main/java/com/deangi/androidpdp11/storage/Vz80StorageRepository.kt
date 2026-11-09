@@ -374,26 +374,12 @@ class Vz80StorageRepository(private val context: Context) {
     private fun prepare(rootUri: Uri): Vz80StorageSnapshot? {
         val root = DocumentFile.fromTreeUri(context, rootUri) ?: return null
         if (!root.canRead() || !root.canWrite()) return null
-        // Accept either the storage root (where we create/find vPDP11) or
-        // vPDP11 itself, which is the natural choice in Android's picker.
-        val directory = if (root.name.equals(VZ80_DIRECTORY, ignoreCase = true)) root
-        else root.findFile(VZ80_DIRECTORY) ?: root.createDirectory(VZ80_DIRECTORY) ?: return null
-        seed(directory)
-        return scan(directory)
+        return scan(root)
     }
 
     private fun vz80Directory(): DocumentFile? = preferences.getString(TREE_URI_KEY, null)
         ?.let(Uri::parse)
         ?.let { rootUri -> DocumentFile.fromTreeUri(context, rootUri) }
-        ?.let { root -> if (root.name.equals(VZ80_DIRECTORY, ignoreCase = true)) root else root.findFile(VZ80_DIRECTORY) }
-
-    private fun seed(directory: DocumentFile) {
-        context.assets.list(SEED_DIRECTORY).orEmpty().forEach { assetName ->
-            if (directory.findFile(assetName) != null) return@forEach
-            val target = directory.createFile("application/octet-stream", assetName) ?: return@forEach
-            context.assets.open("$SEED_DIRECTORY/$assetName").use { input -> context.contentResolver.openOutputStream(target.uri, "w")?.use(input::copyTo) }
-        }
-    }
 
     private fun scan(directory: DocumentFile): Vz80StorageSnapshot {
         val files = directory.listFiles().filter { it.isFile }
@@ -456,6 +442,5 @@ class Vz80StorageRepository(private val context: Context) {
         const val MAX_CPM_FILE_BYTES = 241 * 1024
         const val TREE_URI_KEY = "tree_uri"
         const val VZ80_DIRECTORY = "vPDP11"
-        const val SEED_DIRECTORY = "seed"
     }
 }
