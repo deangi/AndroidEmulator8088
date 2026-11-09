@@ -16,6 +16,7 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     fun reset(entryPc: Int = 0) = withHandle { nativeReset(it, entryPc) }
     internal fun setProgramCounter(value: Int) = withHandle { nativeSetProgramCounter(it, value) }
     override fun runInstructions(count: Long): Long = withHandle { nativeRunInstructions(it, count) }
+    fun zeroMemory() = withHandle { nativeZeroMemory(it) }
     fun clearMemory(value: Byte = 0) = withHandle { nativeClearMemory(it, value) }
     fun load(address: Int, bytes: ByteArray) = withHandle { nativeLoad(it, address, bytes) }
     override fun enqueueInput(value: Byte) = withHandle { nativeEnqueueInput(it, value) }
@@ -40,6 +41,7 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private external fun nativeMemorySizeBytes(handle: Long): Int
     private external fun nativeSetMemorySizeBytes(handle: Long, bytes: Int)
     private external fun nativeClearMemory(handle: Long, value: Byte)
+    private external fun nativeZeroMemory(handle: Long)
     private external fun nativeLoad(handle: Long, address: Int, bytes: ByteArray)
     private external fun nativeEnqueueInput(handle: Long, value: Byte)
     private external fun nativeHasPendingConsoleInput(handle: Long): Boolean

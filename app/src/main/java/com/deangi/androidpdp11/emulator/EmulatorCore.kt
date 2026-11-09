@@ -26,6 +26,9 @@ interface EmulatorCore : Closeable {
     /** Fills the complete installed RAM range; defaults to a conventional cold-clear. */
     fun clearMemory(value: Byte = 0)
 
+    /** Clears installed RAM to zero without changing CPU or device state. */
+    fun zeroMemory() = clearMemory(0)
+
     /** Executes no more than [instructionBudget] guest instructions. */
     fun runInstructions(instructionBudget: Long): ExecutionResult
 

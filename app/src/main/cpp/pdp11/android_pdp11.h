@@ -42,6 +42,7 @@ public:
     uint64_t runInstructions(uint64_t count);
     void setMemorySizeBytes(uint32_t bytes);
     uint32_t memorySizeBytes() const;
+    void zeroMemory();
     void clearMemory(uint8_t value);
     void load(uint32_t address, const uint8_t* bytes, size_t count);
     void enqueueInput(uint8_t value);

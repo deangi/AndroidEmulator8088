@@ -8,7 +8,7 @@ object Pdp11ConsoleProgram {
         // MOV #message,R1; MOVB (R1)+,R0; BEQ input; MOVB R0,@#TPB; BR loop
         // input: TSTB @#TKS; BPL input; MOVB @#TKB,R0; MOVB R0,@#TPB; BR input
         val words = mutableListOf(
-            5569, 542, 37952, 771, 36895, 65398, 508,
+            5569, 542, 37952, 771, 36895, 65398, 507,
             35807, 65392, 33021, 38848, 65394, 36895, 65398, 504,
         )
         val text = "Hello from PDP11\n\u0000".encodeToByteArray()
@@ -23,7 +23,7 @@ object Pdp11ConsoleProgram {
             image[index * 2 + 1] = (word ushr 8).toByte()
         }
         core.reset()
-        core.clearMemory()
+        core.zeroMemory()
         core.load(loadAddress, image)
         core.setProgramCounter(loadAddress)
     }

@@ -138,6 +138,11 @@ Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeClearMemory(JNIEnv*, jobject,
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeZeroMemory(JNIEnv*, jobject, jlong handle) {
+    reinterpret_cast<pdp11android::Engine*>(handle)->zeroMemory();
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeLoad(JNIEnv* env, jobject, jlong handle, jint address, jbyteArray bytes) {
     const auto size = env->GetArrayLength(bytes);
     auto* data = env->GetByteArrayElements(bytes, nullptr);

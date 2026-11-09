@@ -36,12 +36,16 @@ Engine::Engine()
     machine.add_cpu(processor);
     machine.add_tty(new tty(&console, &machine));
     console.set_bus(&machine);
-    machine.init();
+    zeroMemory();
+    reset();
 }
 
 void Engine::reset(const uint16_t entryPc)
 {
-    machine.init();
+    // A PDP-11 INIT/reset affects CPU and I/O state, not installed RAM.
+    // Android exposes clearMemory() as an explicit, separate host action.
+    machine.reset(false);
+    machine.getCpu()->reset();
     machine.getCpu()->setPC(entryPc);
 }
 
@@ -72,6 +76,8 @@ void Engine::setMemorySizeBytes(uint32_t bytes)
 }
 
 uint32_t Engine::memorySizeBytes() const { return machine.get_memory_size(); }
+
+void Engine::zeroMemory() { clearMemory(0); }
 
 void Engine::clearMemory(const uint8_t value)
 {
