@@ -29,9 +29,9 @@ static constexpr uint16_t TTY_IE   = 0100;
 // host must not reassert TPS.DONE in the same guest instruction that wrote TPB.
 static constexpr uint32_t TTY_TX_DELAY_INSTRUCTIONS = 500;
 
-tty::tty(console *const c, bus *const b) :
+tty::tty(console *const c, bus *const b, pdp11android::InstructionScheduler *const scheduler) :
 	c(c),
-	b(b)
+	b(b), scheduler(scheduler)
 {
 	reset(true);
 	c->set_data_cb_notifier(this);
@@ -52,11 +52,23 @@ void tty::reset(const bool hard)
 	tx_ready_reported = true;
 	tx_busy = false;
 	tx_ready_at_instruction = 0;
+	if (scheduler && txEvent) scheduler->cancel(txEvent);
+	txEvent = 0;
 	tx_pending_byte = 0;
 	if (b && b->getCpu()) {
 		b->getCpu()->unqueue_interrupt(4, 060);
 		b->getCpu()->unqueue_interrupt(4, 064);
 	}
+}
+
+void tty::complete_tx(void* argument)
+{
+	auto* self = static_cast<tty*>(argument);
+	self->tx_busy = false;
+	self->tx_ready_at_instruction = 0;
+	self->txEvent = 0;
+	self->registers[(PDP11TTY_TPS - PDP11TTY_BASE) / 2] |= TTY_DONE;
+	self->update_tx_interrupt();
 }
 
 void tty::update_rx_interrupt()
@@ -227,6 +239,8 @@ void tty::write_word(const uint16_t addr, uint16_t v)
 		const uint64_t now = b && b->getCpu()
 			? b->getCpu()->get_instructions_executed_count() : 0;
 		tx_ready_at_instruction = now + TTY_TX_DELAY_INSTRUCTIONS;
+		if (scheduler)
+			txEvent = scheduler->scheduleAfter(now, TTY_TX_DELAY_INSTRUCTIONS, &tty::complete_tx, this);
 		registers[(PDP11TTY_TPS - PDP11TTY_BASE) / 2] &= ~TTY_DONE;
 		update_tx_interrupt();
 

@@ -17,6 +17,7 @@
 
 #include "bus.h"
 #include "console.h"
+#include "../instruction_scheduler.h"
 
 
 #define PDP11TTY_TKS		0177560	// reader status
@@ -33,6 +34,7 @@ class tty
 private:
 	console *const c      { nullptr };
 	bus     *const b      { nullptr };
+	pdp11android::InstructionScheduler *const scheduler { nullptr };
 
 	uint16_t registers[4] { 0 };
 	bool rx_irq_asserted { false };
@@ -40,13 +42,15 @@ private:
 	bool tx_ready_reported { false };
 	bool tx_busy { false };
 	uint64_t tx_ready_at_instruction { 0 };
+	pdp11android::InstructionScheduler::Token txEvent { 0 };
 	uint8_t tx_pending_byte { 0 };
 
 	void update_rx_interrupt();
 	void update_tx_interrupt();
+	static void complete_tx(void* argument);
 
 public:
-	tty(console *const c, bus *const b);
+	tty(console *const c, bus *const b, pdp11android::InstructionScheduler *const scheduler = nullptr);
 	virtual ~tty();
 
 	void notify_rx();

@@ -10,6 +10,7 @@
 #include "console.h"
 #include "cpu.h"
 #include "gen.h"
+#include "instruction_scheduler.h"
 
 namespace pdp11android {
 
@@ -58,6 +59,7 @@ public:
 private:
     kek_event_t stopEvent { EVENT_NONE };
     AndroidConsole console { &stopEvent };
+    InstructionScheduler scheduler;
     // Retained now so profile configuration is deterministic; the KW11-P
     // device will consume this when its ESP32 implementation is ported.
     bool kwpEnabled { false };

@@ -80,7 +80,7 @@ Engine::Engine()
     auto* processor = new cpu(&machine, &stopEvent);
     processor->set_console(&console);
     machine.add_cpu(processor);
-    machine.add_tty(new tty(&console, &machine));
+    machine.add_tty(new tty(&console, &machine, &scheduler));
     console.set_bus(&machine);
     // bus constructs the standard KW11-L.  Android advances it from guest
     // instruction time rather than starting a host-timer thread.
@@ -131,6 +131,7 @@ uint64_t Engine::runInstructions(const uint64_t count)
     uint64_t remaining = count;
     while (remaining > 0 && stopEvent.load() == EVENT_NONE) {
         const uint64_t now = machine.getCpu()->get_instructions_executed_count();
+        scheduler.deliverDue(now);
         uint64_t quantumLimit = deviceServiceQuantum;
         // A timed device may shorten a CPU block to its exact guest-time
         // deadline.  New timers register here without adding work per CPU
@@ -140,11 +141,14 @@ uint64_t Engine::runInstructions(const uint64_t count)
                 quantumLimit = std::min(quantumLimit, *deadline - now);
         }
         const auto quantum = static_cast<uint32_t>(std::min<uint64_t>(remaining, quantumLimit));
+        scheduler.setActiveStop(now + quantum);
         uint32_t executed = 0;
-        while (executed < quantum && stopEvent.load() == EVENT_NONE) {
+        while (executed < quantum && stopEvent.load() == EVENT_NONE &&
+               machine.getCpu()->get_instructions_executed_count() < scheduler.activeStop()) {
             machine.getCpu()->step_fast();
             ++executed;
         }
+        scheduler.deliverDue(machine.getCpu()->get_instructions_executed_count());
         if (executed > 0)
             serviceTimedDevices(executed);
         remaining -= executed;
