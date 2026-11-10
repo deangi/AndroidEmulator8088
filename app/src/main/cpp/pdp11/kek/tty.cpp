@@ -25,16 +25,9 @@ const char * const regnames[] = {
 
 static constexpr uint16_t TTY_DONE = 0200;
 static constexpr uint16_t TTY_IE   = 0100;
-static constexpr uint32_t TTY_TX_DELAY_US = 100;
-
-static uint32_t tty_now_us()
-{
-#if defined(ESP32)
-	return micros();
-#else
-	return 0;
-#endif
-}
+// A console character remains in flight for one engine service quantum.  The
+// host must not reassert TPS.DONE in the same guest instruction that wrote TPB.
+static constexpr uint32_t TTY_TX_DELAY_INSTRUCTIONS = 500;
 
 tty::tty(console *const c, bus *const b) :
 	c(c),
@@ -58,7 +51,7 @@ void tty::reset(const bool hard)
 	tx_irq_asserted = false;
 	tx_ready_reported = true;
 	tx_busy = false;
-	tx_ready_at_us = 0;
+	tx_ready_at_instruction = 0;
 	tx_pending_byte = 0;
 	if (b && b->getCpu()) {
 		b->getCpu()->unqueue_interrupt(4, 060);
@@ -111,13 +104,13 @@ void tty::service_deferred()
 		update_tx_interrupt();
 		return;
 	}
-
-#if defined(ESP32)
-	if ((int32_t)(tty_now_us() - tx_ready_at_us) < 0)
+	const uint64_t now = b && b->getCpu()
+		? b->getCpu()->get_instructions_executed_count() : 0;
+	if (now < tx_ready_at_instruction)
 		return;
-#endif
 
 	tx_busy = false;
+	tx_ready_at_instruction = 0;
 	registers[(PDP11TTY_TPS - PDP11TTY_BASE) / 2] |= TTY_DONE;
 	update_tx_interrupt();
 }
@@ -231,7 +224,9 @@ void tty::write_word(const uint16_t addr, uint16_t v)
 		char ch = v & 127;
 		tx_busy = true;
 		tx_ready_reported = false;
-		tx_ready_at_us = tty_now_us() + TTY_TX_DELAY_US;
+		const uint64_t now = b && b->getCpu()
+			? b->getCpu()->get_instructions_executed_count() : 0;
+		tx_ready_at_instruction = now + TTY_TX_DELAY_INSTRUCTIONS;
 		registers[(PDP11TTY_TPS - PDP11TTY_BASE) / 2] &= ~TTY_DONE;
 		update_tx_interrupt();
 

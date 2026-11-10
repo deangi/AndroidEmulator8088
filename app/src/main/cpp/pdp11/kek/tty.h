@@ -8,6 +8,7 @@
 #include <ArduinoJson.h>
 #endif
 #include <mutex>
+#include <optional>
 #include <stdint.h>
 #include <stdio.h>
 #include <string>
@@ -38,7 +39,7 @@ private:
 	bool tx_irq_asserted { false };
 	bool tx_ready_reported { false };
 	bool tx_busy { false };
-	uint32_t tx_ready_at_us { 0 };
+	uint64_t tx_ready_at_instruction { 0 };
 	uint8_t tx_pending_byte { 0 };
 
 	void update_rx_interrupt();
@@ -56,7 +57,11 @@ public:
 #endif
 
 	void reset(const bool hard);
+	/** Complete transmitter output only when its guest-instruction deadline passes. */
 	void service_deferred();
+	std::optional<uint64_t> next_event_instruction() const {
+		return tx_busy ? std::optional<uint64_t>(tx_ready_at_instruction) : std::nullopt;
+	}
 	// True when TX is in flight, RX IE is armed, or transmitter DONE is clear.
 	bool needs_deferred_service() const;
 

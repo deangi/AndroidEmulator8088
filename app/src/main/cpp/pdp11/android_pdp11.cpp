@@ -130,7 +130,16 @@ uint64_t Engine::runInstructions(const uint64_t count)
     constexpr uint32_t deviceServiceQuantum = 500;
     uint64_t remaining = count;
     while (remaining > 0 && stopEvent.load() == EVENT_NONE) {
-        const auto quantum = static_cast<uint32_t>(std::min<uint64_t>(remaining, deviceServiceQuantum));
+        const uint64_t now = machine.getCpu()->get_instructions_executed_count();
+        uint64_t quantumLimit = deviceServiceQuantum;
+        // A timed device may shorten a CPU block to its exact guest-time
+        // deadline.  New timers register here without adding work per CPU
+        // instruction.
+        if (auto* terminal = machine.getTty()) {
+            if (const auto deadline = terminal->next_event_instruction(); deadline && *deadline > now)
+                quantumLimit = std::min(quantumLimit, *deadline - now);
+        }
+        const auto quantum = static_cast<uint32_t>(std::min<uint64_t>(remaining, quantumLimit));
         uint32_t executed = 0;
         while (executed < quantum && stopEvent.load() == EVENT_NONE) {
             machine.getCpu()->step_fast();
