@@ -425,7 +425,7 @@ class Vz80StorageRepository(private val context: Context) {
         return Vz80Profile(
             fileName = file.name ?: "pdpconfig.ini",
             title = values["system.title"] ?: file.name.orEmpty(),
-            terminal = values["console.terminal"] ?: "adm3a",
+            terminal = values["console.terminal"] ?: "vt100",
             bootDrive = values["disks.boot"]?.uppercase() ?: "RK0",
             drives = drives,
             memorySizeKw = memorySizeKw,

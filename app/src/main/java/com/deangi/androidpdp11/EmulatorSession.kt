@@ -15,6 +15,7 @@ import com.deangi.androidpdp11.storage.ShellDriveCommand
 import com.deangi.androidpdp11.storage.Vz80Profile
 import com.deangi.androidpdp11.storage.Vz80StorageRepository
 import com.deangi.androidpdp11.terminal.Adm3aTerminal
+import com.deangi.androidpdp11.terminal.TerminalPersonality
 import kotlinx.coroutines.*
 
 /** Owns the guest and transports independently of any Activity or screen. */
@@ -35,7 +36,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
     val telnetStatus = mutableStateOf(TelnetStatus())
     val stopping = mutableStateOf(false)
 
-    val terminal = Adm3aTerminal().apply { showCornerTestPattern() }
+    val terminal = Adm3aTerminal(rows = 25, personality = TerminalPersonality.VT100).apply { showCornerTestPattern() }
     val printerCapture = storage.printerCapture()
     val emulator = NativeEmulator()
     private val pdp11Core = Pdp11NativeCore()
@@ -110,6 +111,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
         emulatorRunning.value = false
         inputQueues.clear()
         bootedProfile.value = null
+        terminal.personality = if (profile.terminal.equals("adm3a", ignoreCase = true)) TerminalPersonality.ADM3A else TerminalPersonality.VT100
         terminal.reset()
         activeConsoleCore = pdp11Core
         // vpdp1170 defines mem_size_kw in 1024-word units; PDP-11 words are
