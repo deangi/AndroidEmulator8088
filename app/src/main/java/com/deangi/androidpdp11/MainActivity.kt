@@ -505,6 +505,7 @@ private fun StatusArea(
                 add("System information:")
                 add("  ${AppBuildInfo.displayName}")
                 add("  Boot profile: ${profile?.let { "${it.fileName} (${it.title})" } ?: "not selected"}")
+                profile?.memorySizeKw?.let { kw -> add("  Memory: $kw KW (${kw * 2} KiB)") }
                 add("  Telnet endpoint: ${LocalNetworkInfo.ipv4Address()}:$port")
             }
             add("")

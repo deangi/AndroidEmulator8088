@@ -11,7 +11,16 @@ import com.deangi.androidpdp11.io.PrinterCapture
 
 internal const val DEFAULT_TELNET_PORT = 2323
 
-data class Vz80Profile(val fileName: String, val title: String, val terminal: String, val bootDrive: String, val drives: Map<String, String>, val bootText: String = "")
+data class Vz80Profile(
+    val fileName: String,
+    val title: String,
+    val terminal: String,
+    val bootDrive: String,
+    val drives: Map<String, String>,
+    /** PDP-11 memory capacity in 1024-word units; absent for legacy Z80 profiles. */
+    val memorySizeKw: Int? = null,
+    val bootText: String = "",
+)
 data class Vz80ConfigDocument(val fileName: String, val content: String)
 data class Vz80StorageSnapshot(
     val directoryName: String,
@@ -412,7 +421,16 @@ class Vz80StorageRepository(private val context: Context) {
         val drives = values.filterKeys { it.startsWith("disks.") && it != "disks.boot" }
             .mapKeys { (key, _) -> key.removePrefix("disks.").uppercase() }
             .filter { (_, value) -> value.isNotBlank() }
-        return Vz80Profile(file.name ?: "pdpconfig.ini", values["system.title"] ?: file.name.orEmpty(), values["console.terminal"] ?: "adm3a", values["disks.boot"]?.uppercase() ?: "RK0", drives, bootText)
+        val memorySizeKw = values["system.mem_size_kw"]?.toIntOrNull()?.takeIf { it in 32..2048 }
+        return Vz80Profile(
+            fileName = file.name ?: "pdpconfig.ini",
+            title = values["system.title"] ?: file.name.orEmpty(),
+            terminal = values["console.terminal"] ?: "adm3a",
+            bootDrive = values["disks.boot"]?.uppercase() ?: "RK0",
+            drives = drives,
+            memorySizeKw = memorySizeKw,
+            bootText = bootText,
+        )
     }
 
     private fun parseTelnetPort(file: DocumentFile): Int {
