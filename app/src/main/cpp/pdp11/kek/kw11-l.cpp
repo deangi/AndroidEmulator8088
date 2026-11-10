@@ -84,7 +84,7 @@ FLASHMEM void kw11_l::show_state(console *const cnsl) const
 
 void kw11_l::begin(console *const cnsl)
 {
-	this->cnsl = cnsl;
+	attach_console(cnsl);
 
 #if defined(LOAD_GAUGE_PIN)
 #if defined(ESP32)
@@ -125,6 +125,11 @@ void kw11_l::begin(console *const cnsl)
 	param.sched_priority = sched_get_priority_max(policy);
 	pthread_setschedparam(th->native_handle(), policy, &param);
 #endif
+}
+
+void kw11_l::attach_console(console *const cnsl)
+{
+	this->cnsl = cnsl;
 }
 
 void kw11_l::reset(const bool hard)

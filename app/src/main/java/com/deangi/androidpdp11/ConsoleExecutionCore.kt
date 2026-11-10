@@ -10,6 +10,8 @@ package com.deangi.androidpdp11
  * result to the Android terminal window and connected Telnet clients.
  */
 interface ConsoleExecutionCore : AutoCloseable {
+    /** Apply one emulator-specific configuration assignment, for example `kwp_enabled=false`. */
+    fun config(parameter: String): Boolean = false
     fun runInstructions(count: Long): Long
     fun enqueueInput(value: Byte)
     fun hasPendingConsoleInput(): Boolean

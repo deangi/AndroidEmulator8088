@@ -38,6 +38,7 @@ public:
     Engine& operator=(const Engine&) = delete;
 
     void reset(uint16_t entryPc = 0);
+    bool config(const std::string& parameter);
     void setProgramCounter(uint16_t entryPc);
     uint64_t runInstructions(uint64_t count);
     void setMemorySizeBytes(uint32_t bytes);
@@ -57,6 +58,10 @@ public:
 private:
     kek_event_t stopEvent { EVENT_NONE };
     AndroidConsole console { &stopEvent };
+    // Retained now so profile configuration is deterministic; the KW11-P
+    // device will consume this when its ESP32 implementation is ported.
+    bool kwpEnabled { false };
+    uint32_t kw11InstructionTicks { 0 };
     bus machine;
 };
 

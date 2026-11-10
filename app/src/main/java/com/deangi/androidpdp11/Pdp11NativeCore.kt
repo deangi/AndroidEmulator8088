@@ -14,6 +14,7 @@ class Pdp11NativeCore : ConsoleExecutionCore {
         set(value) = withHandle { nativeSetMemorySizeBytes(it, value) }
 
     fun reset(entryPc: Int = 0) = withHandle { nativeReset(it, entryPc) }
+    override fun config(parameter: String): Boolean = withHandle { nativeConfig(it, parameter) }
     internal fun setProgramCounter(value: Int) = withHandle { nativeSetProgramCounter(it, value) }
     override fun runInstructions(count: Long): Long = withHandle { nativeRunInstructions(it, count) }
     fun zeroMemory() = withHandle { nativeZeroMemory(it) }
@@ -42,6 +43,7 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private external fun nativeDestroy(handle: Long)
     private external fun nativeProcessorId(handle: Long): String
     private external fun nativeReset(handle: Long, pc: Int)
+    private external fun nativeConfig(handle: Long, parameter: String): Boolean
     private external fun nativeSetProgramCounter(handle: Long, pc: Int)
     private external fun nativeRunInstructions(handle: Long, count: Long): Long
     private external fun nativeMemorySizeBytes(handle: Long): Int

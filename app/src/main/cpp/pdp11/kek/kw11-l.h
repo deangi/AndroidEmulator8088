@@ -63,6 +63,9 @@ public:
 #endif
 
 	void     begin(console *const cnsl);
+	// Android advances the line clock from guest instruction time instead of
+	// starting the host timer used by desktop/embedded builds.
+	void     attach_console(console *const cnsl);
 	void     tick();
 #if !defined(TEENSY4_1)
 	void     operator()();

@@ -20,6 +20,8 @@ data class Vz80Profile(
     /** PDP-11 memory capacity in 1024-word units; absent for legacy Z80 profiles. */
     val memorySizeKw: Int? = null,
     val bootText: String = "",
+    /** Architecture-specific assignments forwarded verbatim as `key=value`. */
+    val emulatorParameters: Map<String, String> = emptyMap(),
 )
 data class Vz80ConfigDocument(val fileName: String, val content: String)
 data class Vz80StorageSnapshot(
@@ -466,6 +468,8 @@ class Vz80StorageRepository(private val context: Context) {
             .mapKeys { (key, _) -> key.removePrefix("disks.").uppercase() }
             .filter { (_, value) -> value.isNotBlank() }
         val memorySizeKw = values["system.mem_size_kw"]?.toIntOrNull()?.takeIf { it in 32..2048 }
+        val emulatorParameters = values.filterKeys { it.startsWith("diag.") }
+            .mapKeys { (key, _) -> key.removePrefix("diag.") }
         return Vz80Profile(
             fileName = file.name ?: "pdpconfig.ini",
             title = values["system.title"] ?: file.name.orEmpty(),
@@ -474,6 +478,7 @@ class Vz80StorageRepository(private val context: Context) {
             drives = drives,
             memorySizeKw = memorySizeKw,
             bootText = bootText,
+            emulatorParameters = emulatorParameters,
         )
     }
 

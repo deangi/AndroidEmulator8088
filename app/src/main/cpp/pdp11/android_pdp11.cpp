@@ -6,6 +6,7 @@
 
 #include "tty.h"
 #include "disk_backend.h"
+#include "kw11-l.h"
 #include "loaders.h"
 #include "rk05.h"
 #include "rl02.h"
@@ -78,6 +79,10 @@ Engine::Engine()
     machine.add_cpu(processor);
     machine.add_tty(new tty(&console, &machine));
     console.set_bus(&machine);
+    // bus constructs the standard KW11-L.  Android advances it from guest
+    // instruction time rather than starting a host-timer thread.
+    machine.getKW11_L()->set_interrupt_frequency(60);
+    machine.getKW11_L()->attach_console(&console);
     zeroMemory();
     reset();
 }
@@ -96,11 +101,37 @@ void Engine::setProgramCounter(const uint16_t entryPc)
     machine.getCpu()->setPC(entryPc);
 }
 
+bool Engine::config(const std::string& parameter)
+{
+    const auto separator = parameter.find('=');
+    if (separator == std::string::npos)
+        return false;
+    const auto key = parameter.substr(0, separator);
+    const auto value = parameter.substr(separator + 1);
+    if (key != "kwp_enabled")
+        return false;
+    if (value == "true" || value == "1" || value == "yes" || value == "on") {
+        kwpEnabled = true;
+        return true;
+    }
+    if (value == "false" || value == "0" || value == "no" || value == "off") {
+        kwpEnabled = false;
+        return true;
+    }
+    return false;
+}
+
 uint64_t Engine::runInstructions(const uint64_t count)
 {
     const uint64_t before = machine.getCpu()->get_instructions_executed_count();
     for (uint64_t index = 0; index < count; ++index) {
         machine.getCpu()->step_fast();
+        // Match the vpdp target rate: approximately one 60 Hz line-clock
+        // tick for every 6,000 PDP-11 instructions executed.
+        if (++kw11InstructionTicks >= 6000) {
+            kw11InstructionTicks = 0;
+            machine.getKW11_L()->tick();
+        }
         if (auto* terminal = machine.getTty())
             terminal->service_deferred();
         if (auto* rl = machine.getRL02())

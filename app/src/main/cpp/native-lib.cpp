@@ -112,6 +112,14 @@ Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeReset(JNIEnv*, jobject, jlong
     reinterpret_cast<pdp11android::Engine*>(handle)->reset(static_cast<uint16_t>(pc));
 }
 
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeConfig(JNIEnv* env, jobject, jlong handle, jstring parameter) {
+    const char* text = env->GetStringUTFChars(parameter, nullptr);
+    const bool configured = text && reinterpret_cast<pdp11android::Engine*>(handle)->config(text);
+    if (text) env->ReleaseStringUTFChars(parameter, text);
+    return configured;
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeSetProgramCounter(JNIEnv*, jobject, jlong handle, jint pc) {
     reinterpret_cast<pdp11android::Engine*>(handle)->setProgramCounter(static_cast<uint16_t>(pc));

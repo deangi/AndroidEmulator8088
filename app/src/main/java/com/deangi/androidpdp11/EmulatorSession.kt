@@ -117,6 +117,11 @@ class EmulatorSession(context: Context) : AutoCloseable {
         // vpdp1170 defines mem_size_kw in 1024-word units; PDP-11 words are
         // 16 bits, therefore each KW is 2048 addressable bytes.
         profile.memorySizeKw?.let { pdp11Core.memorySizeBytes = it * 2048 }
+        profile.emulatorParameters.forEach { (name, value) ->
+            // Unsupported profile diagnostics are retained for forward
+            // compatibility; native cores selectively consume assignments.
+            pdp11Core.config("$name=$value")
+        }
         storage.bootPdp11(profile, pdp11Core)
         diskError.value = ""
         bootedProfile.value = profile
