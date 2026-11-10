@@ -69,6 +69,9 @@ requires the older ADM-3A parser.
   contract already shared by emulator engines, so printer bytes remain separate
   from the console/Telnet stream.
 - [ ] Add PDP-11 drive mount/dismount controls using native PDP device names.
+- [ ] Add Telnet-shell blank-image creation through `DrivePort.createBlankImage()`;
+  support `create <image-type> <file-name> [size-bytes]`, where an omitted size
+  passes `0` and selects the type's default geometry.
 - [ ] Add front-panel support and additional PDP-11 disk controllers.
 
 ## Build
