@@ -117,10 +117,10 @@ class EmulatorSession(context: Context) : AutoCloseable {
         // vpdp1170 defines mem_size_kw in 1024-word units; PDP-11 words are
         // 16 bits, therefore each KW is 2048 addressable bytes.
         profile.memorySizeKw?.let { pdp11Core.memorySizeBytes = it * 2048 }
-        storage.bootPdp11Rk05(profile, pdp11Core)
+        storage.bootPdp11(profile, pdp11Core)
         diskError.value = ""
         bootedProfile.value = profile
-        console.publishOutput("[Booting ${profile.title.ifBlank { profile.fileName }} from RK0]\r\n".encodeToByteArray())
+        console.publishOutput("[Booting ${profile.title.ifBlank { profile.fileName }} from ${profile.bootDrive.uppercase()}]\r\n".encodeToByteArray())
         terminalVersion.intValue++
         emulatorRunning.value = true
     }

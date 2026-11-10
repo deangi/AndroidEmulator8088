@@ -5,10 +5,10 @@ import java.io.Closeable
 /**
  * Architecture-neutral contract between the Android host and a native guest.
  *
- * A core owns CPU execution and its primary console UART/TTY.  Disk geometry,
- * boot profiles, front-panel switches, and printer hardware deliberately do
- * not belong here: those are machine capabilities and vary substantially
- * between CP/M/Z80 and PDP-11 systems.
+ * A core owns CPU execution, its primary console UART/TTY, and the machine's
+ * media-controller state. Boot profiles remain host policy; drive geometry,
+ * mounted-state notification, and media changes belong to the native machine
+ * implementation and vary substantially between CP/M/Z80 and PDP-11 systems.
  */
 interface EmulatorCore : Closeable {
     val architecture: EmulatorArchitecture
@@ -95,10 +95,19 @@ interface LinePrinterPort {
  * name is resolved relative to [EmulatorWorkspace.directoryName] by Android.
  */
 interface DrivePort {
+    /** All slots that this machine can expose, whether media is present or not. */
+    fun availableDrives(): List<DriveSlot>
     fun mountedDrives(): List<MountedDrive>
     fun mount(drive: String, fileName: String, readOnly: Boolean = false): DriveResult
     fun dismount(drive: String): DriveResult
 }
+
+/** Native unit name and its media/controller family, for example RL0/RL11. */
+data class DriveSlot(
+    val drive: String,
+    val controller: String,
+    val removable: Boolean = true,
+)
 
 data class MountedDrive(
     val drive: String,

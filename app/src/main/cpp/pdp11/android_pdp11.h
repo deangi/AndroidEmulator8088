@@ -46,6 +46,9 @@ public:
     void clearMemory(uint8_t value);
     void load(uint32_t address, const uint8_t* bytes, size_t count);
     bool bootRk05(int descriptor);
+    bool mountRl(int unit, int descriptor);
+    bool dismountRl(int unit);
+    bool bootRl(int unit);
     void enqueueInput(uint8_t value);
     bool hasPendingInput();
     std::vector<uint8_t> drainConsole();

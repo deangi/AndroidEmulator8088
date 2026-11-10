@@ -20,6 +20,11 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     fun clearMemory(value: Byte = 0) = withHandle { nativeClearMemory(it, value) }
     fun load(address: Int, bytes: ByteArray) = withHandle { nativeLoad(it, address, bytes) }
     fun bootRk05(descriptor: Int): Boolean = withHandle { nativeBootRk05(it, descriptor) }
+    /** Notify the native RL11 controller that DL[unit] now has media. */
+    fun mountRl(unit: Int, descriptor: Int): Boolean = withHandle { nativeMountRl(it, unit, descriptor) }
+    /** Notify the native RL11 controller that DL[unit] is now empty. */
+    fun dismountRl(unit: Int): Boolean = withHandle { nativeDismountRl(it, unit) }
+    fun bootRl(unit: Int): Boolean = withHandle { nativeBootRl(it, unit) }
     override fun enqueueInput(value: Byte) = withHandle { nativeEnqueueInput(it, value) }
     override fun hasPendingConsoleInput(): Boolean = withHandle { nativeHasPendingConsoleInput(it) }
     override fun drainConsole(): ByteArray = withHandle { nativeDrainConsole(it) }
@@ -45,6 +50,9 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private external fun nativeZeroMemory(handle: Long)
     private external fun nativeLoad(handle: Long, address: Int, bytes: ByteArray)
     private external fun nativeBootRk05(handle: Long, descriptor: Int): Boolean
+    private external fun nativeMountRl(handle: Long, unit: Int, descriptor: Int): Boolean
+    private external fun nativeDismountRl(handle: Long, unit: Int): Boolean
+    private external fun nativeBootRl(handle: Long, unit: Int): Boolean
     private external fun nativeEnqueueInput(handle: Long, value: Byte)
     private external fun nativeHasPendingConsoleInput(handle: Long): Boolean
     private external fun nativeDrainConsole(handle: Long): ByteArray

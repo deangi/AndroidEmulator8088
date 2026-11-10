@@ -8,6 +8,7 @@
 #include "disk_backend.h"
 #include "loaders.h"
 #include "rk05.h"
+#include "rl02.h"
 
 namespace pdp11android {
 
@@ -102,6 +103,8 @@ uint64_t Engine::runInstructions(const uint64_t count)
         machine.getCpu()->step_fast();
         if (auto* terminal = machine.getTty())
             terminal->service_deferred();
+        if (auto* rl = machine.getRL02())
+            rl->service_deferred();
         if (stopEvent.load() != EVENT_NONE)
             break;
     }
@@ -151,6 +154,73 @@ bool Engine::bootRk05(const int descriptor)
     machine.add_rk05(controller);
 
     const auto entry = set_boot_loader(&machine, BL_RK05);
+    if (!entry.has_value())
+        return false;
+    reset(*entry);
+    return true;
+}
+
+bool Engine::mountRl(const int unit, const int descriptor)
+{
+    if (unit < 0 || unit > 3 || descriptor < 0)
+        return false;
+
+    auto* image = new AndroidFdDiskBackend(descriptor);
+    if (!image->begin(false)) {
+        delete image;
+        return false;
+    }
+
+    // Match vpdp1170's deliberately tolerant RL media recognition.  Some
+    // historical images contain a small trailer or sparse-file padding.
+    constexpr uint64_t rl01Bytes = 5242880u;
+    constexpr uint64_t rl02Bytes = 10485760u;
+    constexpr uint64_t tolerancePercent = 20u;
+    const auto withinTolerance = [](const uint64_t bytes, const uint64_t nominal) {
+        const uint64_t delta = nominal * tolerancePercent / 100u;
+        return bytes >= nominal - delta && bytes <= nominal + delta;
+    };
+    if (!withinTolerance(image->get_size(), rl01Bytes) &&
+        !withinTolerance(image->get_size(), rl02Bytes)) {
+        delete image;
+        return false;
+    }
+
+    auto* controller = machine.getRL02();
+    if (!controller) {
+        controller = new rl02(&machine, console.get_disk_read_activity_flag(), console.get_disk_write_activity_flag());
+        controller->begin();
+        machine.add_rl02(controller);
+    }
+    auto* drives = controller->access_disk_backends();
+    if (drives->size() < 4)
+        drives->resize(4, nullptr);
+    delete drives->at(unit);
+    drives->at(unit) = image;
+    return true;
+}
+
+bool Engine::dismountRl(const int unit)
+{
+    if (unit < 0 || unit > 3 || !machine.getRL02())
+        return false;
+    auto* drives = machine.getRL02()->access_disk_backends();
+    if (static_cast<size_t>(unit) >= drives->size())
+        return true;
+    delete drives->at(unit);
+    drives->at(unit) = nullptr;
+    return true;
+}
+
+bool Engine::bootRl(const int unit)
+{
+    if (unit < 0 || unit > 3 || !machine.getRL02())
+        return false;
+    const auto* drives = machine.getRL02()->access_disk_backends();
+    if (static_cast<size_t>(unit) >= drives->size() || drives->at(unit) == nullptr)
+        return false;
+
+    const auto entry = set_boot_loader(&machine, BL_RL02);
     if (!entry.has_value())
         return false;
     reset(*entry);

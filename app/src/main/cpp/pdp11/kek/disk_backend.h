@@ -49,6 +49,10 @@ public:
 
 	virtual bool begin(const bool disk_snapshots) = 0;
 
+	// Size discovered by begin().  Controllers use it to select geometry for
+	// media families such as RL01 versus RL02 without depending on a host path.
+	uint64_t get_size() const { return size; }
+
 	// Host adapters with read-ahead state override this. A cold emulator
 	// reboot calls it even when media path and size are unchanged.
 	virtual void invalidate_cache() {}

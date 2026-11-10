@@ -316,6 +316,50 @@ class Vz80StorageRepository(private val context: Context) {
         mountedNames = setOf(imageName)
     }
 
+    /**
+     * Mount all configured RL11 units before installing the bootstrap.  The
+     * native controller is told about each mount (and each absent unit), so it
+     * can report RL01/RL02 geometry from the image size just as vpdp1170 does.
+     */
+    fun bootPdp11Rl(profile: Vz80Profile, emulator: Pdp11NativeCore) = synchronized(mediaLock) {
+        val bootUnit = when (profile.bootDrive.trim().uppercase()) {
+            "RL0", "DL0", "0" -> 0
+            "RL1", "DL1", "1" -> 1
+            "RL2", "DL2", "2" -> 2
+            "RL3", "DL3", "3" -> 3
+            else -> throw IllegalArgumentException("Invalid RL boot drive: ${profile.bootDrive}")
+        }
+        val root = requireNotNull(vz80Directory()) { "vPDP11 storage is unavailable" }
+        val mounted = mutableSetOf<String>()
+        for (unit in 0..3) {
+            val imageName = profile.drives["DL$unit"]?.trim()?.trimStart('/').orEmpty()
+            if (imageName.isBlank()) {
+                emulator.dismountRl(unit)
+                continue
+            }
+            require('/' !in imageName && '\\' !in imageName && imageName != "..") { "Invalid RL image name: $imageName" }
+            val image = requireNotNull(root.findFile(imageName)) { "RL$unit image not found: $imageName" }
+            require(image.isFile) { "Not a disk image: $imageName" }
+            require(image.length() > 0) { "Disk image is empty: $imageName" }
+            requireNotNull(context.contentResolver.openFileDescriptor(image.uri, "rw")) { "Cannot open disk image: $imageName" }.use { descriptor ->
+                check(emulator.mountRl(unit, descriptor.fd)) {
+                    "RL$unit image is not a supported RL01/RL02 size: $imageName (${image.length()} bytes)"
+                }
+            }
+            mounted += imageName
+        }
+        check(emulator.bootRl(bootUnit)) { "Could not attach RL$bootUnit boot image" }
+        mountedNames = mounted
+    }
+
+    fun bootPdp11(profile: Vz80Profile, emulator: Pdp11NativeCore) {
+        when (profile.bootDrive.trim().uppercase()) {
+            "RK0", "DK0" -> bootPdp11Rk05(profile, emulator)
+            "RL0", "DL0", "RL1", "DL1", "RL2", "DL2", "RL3", "DL3", "0", "1", "2", "3" -> bootPdp11Rl(profile, emulator)
+            else -> throw IllegalArgumentException("Unsupported PDP-11 boot drive: ${profile.bootDrive}")
+        }
+    }
+
     fun replaceMountedDisks(profile: Vz80Profile, emulator: NativeEmulator) = synchronized(mediaLock) { withDiskImages(profile) { fds, hddMask ->
         check(emulator.replaceDisks(fds, hddMask)) { emulator.takeDiskError().ifEmpty { "Could not mount disk images" } }
         mountedNames = profile.drives.values.toSet()
