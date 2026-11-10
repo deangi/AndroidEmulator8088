@@ -6,10 +6,13 @@
 
 #include "tty.h"
 #include "disk_backend.h"
+#include "dz11.h"
 #include "kw11-l.h"
 #include "loaders.h"
+#include "rp06.h"
 #include "rk05.h"
 #include "rl02.h"
+#include "uda50.h"
 
 namespace pdp11android {
 
@@ -124,22 +127,38 @@ bool Engine::config(const std::string& parameter)
 uint64_t Engine::runInstructions(const uint64_t count)
 {
     const uint64_t before = machine.getCpu()->get_instructions_executed_count();
-    for (uint64_t index = 0; index < count; ++index) {
-        machine.getCpu()->step_fast();
-        // Match the vpdp target rate: approximately one 60 Hz line-clock
-        // tick for every 6,000 PDP-11 instructions executed.
-        if (++kw11InstructionTicks >= 6000) {
-            kw11InstructionTicks = 0;
-            machine.getKW11_L()->tick();
+    constexpr uint32_t deviceServiceQuantum = 500;
+    uint64_t remaining = count;
+    while (remaining > 0 && stopEvent.load() == EVENT_NONE) {
+        const auto quantum = static_cast<uint32_t>(std::min<uint64_t>(remaining, deviceServiceQuantum));
+        uint32_t executed = 0;
+        while (executed < quantum && stopEvent.load() == EVENT_NONE) {
+            machine.getCpu()->step_fast();
+            ++executed;
         }
-        if (auto* terminal = machine.getTty())
-            terminal->service_deferred();
-        if (auto* rl = machine.getRL02())
-            rl->service_deferred();
-        if (stopEvent.load() != EVENT_NONE)
-            break;
+        if (executed > 0)
+            serviceTimedDevices(executed);
+        remaining -= executed;
     }
     return machine.getCpu()->get_instructions_executed_count() - before;
+}
+
+void Engine::serviceTimedDevices(const uint32_t elapsedInstructions)
+{
+    // Device time is guest-instruction based.  This is the single scheduler
+    // boundary for delayed I/O completion and future KW11-P/LP11 timers.
+    kw11InstructionTicks += elapsedInstructions;
+    while (kw11InstructionTicks >= 6000) {
+        kw11InstructionTicks -= 6000;
+        machine.getKW11_L()->tick();
+    }
+
+    if (auto* terminal = machine.getTty()) terminal->service_deferred();
+    if (auto* rk = machine.getRK05()) rk->service_deferred();
+    if (auto* rl = machine.getRL02()) rl->service_deferred();
+    if (auto* rp = machine.getRP06()) rp->service_deferred();
+    if (auto* uda = machine.getUDA50()) uda->service_deferred();
+    if (auto* dz = machine.getDZ11()) dz->service_deferred();
 }
 
 void Engine::setMemorySizeBytes(uint32_t bytes)

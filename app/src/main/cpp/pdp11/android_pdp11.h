@@ -62,6 +62,7 @@ private:
     // device will consume this when its ESP32 implementation is ported.
     bool kwpEnabled { false };
     uint32_t kw11InstructionTicks { 0 };
+    void serviceTimedDevices(uint32_t elapsedInstructions);
     bus machine;
 };
 
