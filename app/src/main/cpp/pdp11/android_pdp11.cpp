@@ -130,7 +130,7 @@ uint64_t Engine::runInstructions(const uint64_t count)
     constexpr uint32_t deviceServiceQuantum = 500;
     uint64_t remaining = count;
     while (remaining > 0 && stopEvent.load() == EVENT_NONE) {
-        const uint64_t now = machine.getCpu()->get_instructions_executed_count();
+        const uint64_t now = scheduler.now();
         scheduler.deliverDue(now);
         uint64_t quantumLimit = deviceServiceQuantum;
         // A timed device may shorten a CPU block to its exact guest-time
@@ -144,11 +144,12 @@ uint64_t Engine::runInstructions(const uint64_t count)
         scheduler.setActiveStop(now + quantum);
         uint32_t executed = 0;
         while (executed < quantum && stopEvent.load() == EVENT_NONE &&
-               machine.getCpu()->get_instructions_executed_count() < scheduler.activeStop()) {
+               scheduler.now() < scheduler.activeStop()) {
             machine.getCpu()->step_fast();
+            scheduler.advance(1);
             ++executed;
         }
-        scheduler.deliverDue(machine.getCpu()->get_instructions_executed_count());
+        scheduler.deliverDue(scheduler.now());
         if (executed > 0)
             serviceTimedDevices(executed);
         remaining -= executed;

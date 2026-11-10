@@ -27,7 +27,7 @@ static constexpr uint16_t TTY_DONE = 0200;
 static constexpr uint16_t TTY_IE   = 0100;
 // A console character remains in flight for one engine service quantum.  The
 // host must not reassert TPS.DONE in the same guest instruction that wrote TPB.
-static constexpr uint32_t TTY_TX_DELAY_INSTRUCTIONS = 500;
+static constexpr uint32_t TTY_TX_DELAY_INSTRUCTIONS = 100;
 
 tty::tty(console *const c, bus *const b, pdp11android::InstructionScheduler *const scheduler) :
 	c(c),
@@ -116,8 +116,8 @@ void tty::service_deferred()
 		update_tx_interrupt();
 		return;
 	}
-	const uint64_t now = b && b->getCpu()
-		? b->getCpu()->get_instructions_executed_count() : 0;
+	const uint64_t now = scheduler ? scheduler->now() : (b && b->getCpu()
+		? b->getCpu()->get_instructions_executed_count() : 0);
 	if (now < tx_ready_at_instruction)
 		return;
 
@@ -236,8 +236,8 @@ void tty::write_word(const uint16_t addr, uint16_t v)
 		char ch = v & 127;
 		tx_busy = true;
 		tx_ready_reported = false;
-		const uint64_t now = b && b->getCpu()
-			? b->getCpu()->get_instructions_executed_count() : 0;
+		const uint64_t now = scheduler ? scheduler->now() : (b && b->getCpu()
+			? b->getCpu()->get_instructions_executed_count() : 0);
 		tx_ready_at_instruction = now + TTY_TX_DELAY_INSTRUCTIONS;
 		if (scheduler)
 			txEvent = scheduler->scheduleAfter(now, TTY_TX_DELAY_INSTRUCTIONS, &tty::complete_tx, this);

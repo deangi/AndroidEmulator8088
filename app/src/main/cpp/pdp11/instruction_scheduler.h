@@ -15,6 +15,8 @@ public:
     void cancel(Token token);
     uint64_t nextDue() const;
     void deliverDue(uint64_t now);
+    uint64_t now() const { return instructionTime; }
+    void advance(uint64_t instructions) { instructionTime += instructions; }
     void setActiveStop(uint64_t instruction) { activeStopInstruction = instruction; }
     uint64_t activeStop() const { return activeStopInstruction; }
 
@@ -23,6 +25,7 @@ private:
     std::multimap<uint64_t, Event> events;
     Token nextToken { 1 };
     uint64_t activeStopInstruction { UINT64_MAX };
+    uint64_t instructionTime { 0 };
 };
 
 } // namespace pdp11android
