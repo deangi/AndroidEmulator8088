@@ -61,7 +61,10 @@ requires the older ADM-3A parser.
 
 - [x] Boot RT-11 from a selected RK05 disk image through an Android file descriptor.
 - [x] Report PDP-11 drive names (such as `RK0` and `RL0`) in system status.
-- [ ] Connect the PDP-11 line-printer device to Android printer capture in `vPDP11/printers`.
+- [ ] Implement a PDP-11 LP11 line-printer device and connect it to Android
+  printer capture in `vPDP11/printers`. Implement LPS at `177514` (octal),
+  LPB at `177516` (octal), and interrupt vector `200` (octal), following the
+  [LP11 section of the 1976 PDP-11 Peripherals Handbook](https://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP-11_PeripheralsHbk_1976.pdf).
   This will implement the standard `EmulatorCore.linePrinter: LinePrinterPort?`
   contract already shared by emulator engines, so printer bytes remain separate
   from the console/Telnet stream.
