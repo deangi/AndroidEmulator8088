@@ -105,8 +105,9 @@ interface DrivePort {
 
     /**
      * Create an unmounted, blank image in the selected emulator workspace.
-     * A null [BlankDiskImageRequest.sizeBytes] selects the image type's
-     * conventional geometry; implementations reject unsupported sizes.
+     * A [BlankDiskImageRequest.sizeBytes] value of zero selects the image
+     * type's conventional geometry; implementations reject unsupported
+     * positive sizes.
      */
     fun createBlankImage(request: BlankDiskImageRequest): DriveResult
 
@@ -125,7 +126,7 @@ data class DriveSlot(
 data class DiskImageType(
     val id: String,
     val displayName: String,
-    val defaultSizeBytes: Long? = null,
+    val defaultSizeBytes: Long = 0,
     val allowedSizeBytes: List<Long> = emptyList(),
 )
 
@@ -133,7 +134,8 @@ data class DiskImageType(
 data class BlankDiskImageRequest(
     val fileName: String,
     val imageTypeId: String,
-    val sizeBytes: Long? = null,
+    /** Zero selects [DiskImageType.defaultSizeBytes]. */
+    val sizeBytes: Long = 0,
 )
 
 data class MountedDrive(
