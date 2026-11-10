@@ -97,7 +97,19 @@ interface LinePrinterPort {
 interface DrivePort {
     /** All slots that this machine can expose, whether media is present or not. */
     fun availableDrives(): List<DriveSlot>
+
+    /** Image types and valid geometry choices offered by this machine. */
+    fun supportedImageTypes(): List<DiskImageType>
+
     fun mountedDrives(): List<MountedDrive>
+
+    /**
+     * Create an unmounted, blank image in the selected emulator workspace.
+     * A null [BlankDiskImageRequest.sizeBytes] selects the image type's
+     * conventional geometry; implementations reject unsupported sizes.
+     */
+    fun createBlankImage(request: BlankDiskImageRequest): DriveResult
+
     fun mount(drive: String, fileName: String, readOnly: Boolean = false): DriveResult
     fun dismount(drive: String): DriveResult
 }
@@ -107,6 +119,21 @@ data class DriveSlot(
     val drive: String,
     val controller: String,
     val removable: Boolean = true,
+)
+
+/** A machine-supported disk image family, such as RL01 or CP/M floppy. */
+data class DiskImageType(
+    val id: String,
+    val displayName: String,
+    val defaultSizeBytes: Long? = null,
+    val allowedSizeBytes: List<Long> = emptyList(),
+)
+
+/** Host request to create a blank image; it is not mounted automatically. */
+data class BlankDiskImageRequest(
+    val fileName: String,
+    val imageTypeId: String,
+    val sizeBytes: Long? = null,
 )
 
 data class MountedDrive(
