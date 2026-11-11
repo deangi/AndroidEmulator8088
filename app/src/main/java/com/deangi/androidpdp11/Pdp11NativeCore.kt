@@ -30,6 +30,9 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     /** Notify the native RL11 controller that DL[unit] is now empty. */
     fun dismountRl(unit: Int): Boolean = withHandle { nativeDismountRl(it, unit) }
     fun bootRl(unit: Int): Boolean = withHandle { nativeBootRl(it, unit) }
+    /** Attach the UDA50/MSCP DU0 image; native code retains a duplicated descriptor. */
+    fun mountDu0(descriptor: Int): Boolean = withHandle { nativeMountDu0(it, descriptor) }
+    fun bootDu0(): Boolean = withHandle { nativeBootDu0(it) }
     override fun enqueueInput(value: Byte) = withHandle { nativeEnqueueInput(it, value) }
     override fun hasPendingConsoleInput(): Boolean = withHandle { nativeHasPendingConsoleInput(it) }
     override fun drainConsole(): ByteArray = withHandle { nativeDrainConsole(it) }
@@ -62,6 +65,8 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private external fun nativeMountRl(handle: Long, unit: Int, descriptor: Int): Boolean
     private external fun nativeDismountRl(handle: Long, unit: Int): Boolean
     private external fun nativeBootRl(handle: Long, unit: Int): Boolean
+    private external fun nativeMountDu0(handle: Long, descriptor: Int): Boolean
+    private external fun nativeBootDu0(handle: Long): Boolean
     private external fun nativeEnqueueInput(handle: Long, value: Byte)
     private external fun nativeHasPendingConsoleInput(handle: Long): Boolean
     private external fun nativeDrainConsole(handle: Long): ByteArray

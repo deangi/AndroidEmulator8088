@@ -195,6 +195,16 @@ Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeBootRl(JNIEnv*, jobject, jlon
     return reinterpret_cast<pdp11android::Engine*>(handle)->bootRl(unit);
 }
 
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeMountDu0(JNIEnv*, jobject, jlong handle, jint descriptor) {
+    return reinterpret_cast<pdp11android::Engine*>(handle)->mountDu0(descriptor);
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeBootDu0(JNIEnv*, jobject, jlong handle) {
+    return reinterpret_cast<pdp11android::Engine*>(handle)->bootDu0();
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeEnqueueInput(JNIEnv*, jobject, jlong handle, jbyte value) {
     reinterpret_cast<pdp11android::Engine*>(handle)->enqueueInput(static_cast<uint8_t>(value));

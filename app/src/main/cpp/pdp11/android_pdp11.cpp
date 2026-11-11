@@ -55,6 +55,8 @@ private:
 
 } // namespace
 
+Engine::~Engine() = default;
+
 void AndroidConsole::put_char_ll(const char value)
 {
     std::lock_guard<std::mutex> lock(outputLock);
@@ -302,6 +304,59 @@ bool Engine::bootRl(const int unit)
     if (!entry.has_value())
         return false;
     reset(*entry);
+    return true;
+}
+
+bool Engine::mountDu0(const int descriptor)
+{
+    if (descriptor < 0)
+        return false;
+
+    auto image = std::make_unique<AndroidFdDiskBackend>(descriptor);
+    if (!image->begin(false) || image->get_size() < 512 || image->get_size() > 0xfffffe00u)
+        return false;
+
+    auto* controller = machine.getUDA50();
+    if (!controller) {
+        controller = new uda50(&machine);
+        machine.add_UDA50(controller);
+    }
+    controller->attach_media(image.get(),
+        [](void* context, const uint32_t offset, uint8_t* data, const uint32_t count) {
+            return static_cast<AndroidFdDiskBackend*>(context)->read(offset, count, data, 0);
+        },
+        [](void* context, const uint32_t offset, const uint8_t* data, const uint32_t count) {
+            return static_cast<AndroidFdDiskBackend*>(context)->write(offset, count, data, 0);
+        },
+        [](void* context) {
+            return static_cast<uint32_t>(static_cast<AndroidFdDiskBackend*>(context)->get_size());
+        });
+    du0Media = std::move(image);
+    return true;
+}
+
+bool Engine::bootDu0()
+{
+    if (!machine.getUDA50() || !du0Media)
+        return false;
+
+    // SIMH UDA50 bootstrap, relocated by vpdp1170 to 02000.  The first word
+    // is the conventional "UD" signature; execution begins at 02002.
+    static constexpr uint16_t bootRom[] = {
+        0042125, 0012706, 0002000, 0012700, 0000000, 0012701, 0172150,
+        0012704, 0002162, 0012705, 0004000, 0010102, 0005022, 0005712,
+        0100001, 0000000, 0030512, 0001773, 0012412, 0006305, 0100370,
+        0105714, 0001434, 0012702, 0007000, 0005022, 0020227, 0007204,
+        0103774, 0112437, 0007100, 0110037, 0007110, 0112437, 0007114,
+        0112437, 0007121, 0012722, 0007004, 0010522, 0012722, 0007104,
+        0010512, 0024242, 0005711, 0005712, 0100776, 0005737, 0007016,
+        0001743, 0000000, 0005011, 0005003, 0012704, 0002020, 0005005,
+        0005007, 0100000, 0007204, 0000000, 0000001, 0004420, 0020000,
+        0001041, 0000000
+    };
+    for (uint32_t i = 0; i < std::size(bootRom); ++i)
+        machine.write_physical(002000 + (i * 2), bootRom[i]);
+    reset(002002);
     return true;
 }
 

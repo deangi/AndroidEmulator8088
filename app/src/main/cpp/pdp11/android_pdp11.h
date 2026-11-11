@@ -4,12 +4,14 @@
 #include <atomic>
 #include <deque>
 #include <mutex>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "bus.h"
 #include "console.h"
 #include "cpu.h"
+#include "disk_backend.h"
 #include "gen.h"
 #include "instruction_scheduler.h"
 
@@ -35,7 +37,7 @@ private:
 class Engine final {
 public:
     Engine();
-    ~Engine() = default;
+    ~Engine();
     Engine(const Engine&) = delete;
     Engine& operator=(const Engine&) = delete;
 
@@ -52,6 +54,8 @@ public:
     bool mountRl(int unit, int descriptor);
     bool dismountRl(int unit);
     bool bootRl(int unit);
+    bool mountDu0(int descriptor);
+    bool bootDu0();
     std::string diagnostics();
     void requestDiagnostics() { diagnosticsRequested.store(true); }
     std::string takeDiagnostics();
@@ -71,6 +75,7 @@ private:
     std::atomic<bool> diagnosticsRequested { false };
     std::mutex diagnosticsLock;
     std::string pendingDiagnostics;
+    std::unique_ptr<disk_backend> du0Media;
     void serviceTimedDevices(uint32_t elapsedInstructions);
     bus machine;
 };

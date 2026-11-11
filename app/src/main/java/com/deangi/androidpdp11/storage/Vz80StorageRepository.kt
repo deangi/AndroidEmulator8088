@@ -362,10 +362,44 @@ class Vz80StorageRepository(private val context: Context) {
         mountedNames = mounted
     }
 
+    /** Attach optional RL media plus the UDA50/MSCP DU0 image, then run the DU bootstrap. */
+    fun bootPdp11Du0(profile: Vz80Profile, emulator: Pdp11NativeCore) = synchronized(mediaLock) {
+        val root = requireNotNull(vz80Directory()) { "vPDP11 storage is unavailable" }
+        val mounted = mutableSetOf<String>()
+        // BSD's PiDP profile carries an RL companion pack.  It is not the
+        // boot device, but it should be attached exactly as configured.
+        for (unit in 0..3) {
+            val imageName = profile.drives["DL$unit"]?.trim()?.trimStart('/').orEmpty()
+            if (imageName.isBlank()) {
+                emulator.dismountRl(unit)
+                continue
+            }
+            require('/' !in imageName && '\\' !in imageName && imageName != "..") { "Invalid RL image name: $imageName" }
+            val image = requireNotNull(root.findFile(imageName)) { "RL$unit image not found: $imageName" }
+            require(image.isFile && image.length() > 0) { "Invalid RL image: $imageName" }
+            requireNotNull(context.contentResolver.openFileDescriptor(image.uri, "rw")) { "Cannot open RL$unit image: $imageName" }.use { descriptor ->
+                check(emulator.mountRl(unit, descriptor.fd)) { "RL$unit image is not a supported RL01/RL02 size: $imageName (${image.length()} bytes)" }
+            }
+            mounted += imageName
+        }
+        val duName = profile.drives["DU0"]?.trim()?.trimStart('/')
+            ?: throw IllegalArgumentException("DU0 boot profile has no du0 image")
+        require('/' !in duName && '\\' !in duName && duName != "..") { "Invalid DU0 image name: $duName" }
+        val duImage = requireNotNull(root.findFile(duName)) { "DU0 image not found: $duName" }
+        require(duImage.isFile && duImage.length() >= 512) { "Invalid DU0 image: $duName" }
+        requireNotNull(context.contentResolver.openFileDescriptor(duImage.uri, "rw")) { "Cannot open DU0 image: $duName" }.use { descriptor ->
+            check(emulator.mountDu0(descriptor.fd)) { "Could not attach DU0 image: $duName" }
+        }
+        check(emulator.bootDu0()) { "Could not install DU0 bootstrap" }
+        mounted += duName
+        mountedNames = mounted
+    }
+
     fun bootPdp11(profile: Vz80Profile, emulator: Pdp11NativeCore) {
         when (profile.bootDrive.trim().uppercase()) {
             "RK0", "DK0" -> bootPdp11Rk05(profile, emulator)
             "RL0", "DL0", "RL1", "DL1", "RL2", "DL2", "RL3", "DL3", "0", "1", "2", "3" -> bootPdp11Rl(profile, emulator)
+            "DU0", "DUA0" -> bootPdp11Du0(profile, emulator)
             else -> throw IllegalArgumentException("Unsupported PDP-11 boot drive: ${profile.bootDrive}")
         }
     }
