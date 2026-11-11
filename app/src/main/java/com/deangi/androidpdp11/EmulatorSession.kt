@@ -132,10 +132,14 @@ class EmulatorSession(context: Context) : AutoCloseable {
     }
 
     fun captureDiagnostics() {
-        val text = pdp11Core.diagnostics()
-        latestDiagnostics.value = text
-        runCatching { storage.appendDiagnostics(text) }
-            .onFailure { latestDiagnostics.value = "$text\r\nLog write failed: ${it.message}" }
+        scope.launch {
+            val result = withContext(Dispatchers.Default) {
+                val text = pdp11Core.diagnostics()
+                runCatching { storage.appendDiagnostics(text) }
+                    .fold(onSuccess = { text }, onFailure = { "$text\r\nLog write failed: ${it.message}" })
+            }
+            latestDiagnostics.value = result
+        }
     }
 
     private fun shellCommand(input: String): String {
