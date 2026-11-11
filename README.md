@@ -60,6 +60,8 @@ requires the older ADM-3A parser.
 ## Phase 3 task list
 
 - [x] Boot RT-11 from a selected RK05 disk image through an Android file descriptor.
+- [x] Boot RL01/RL02 profiles and configure their mounted units from `pdpconfig*.ini`.
+- [x] Boot UDA50/MSCP DU0 media, including the 2.11BSD PiDP configuration.
 - [x] Report PDP-11 drive names (such as `RK0` and `RL0`) in system status.
 - [ ] Implement a PDP-11 LP11 line-printer device and connect it to Android
   printer capture in `vPDP11/printers`. Implement LPS at `177514` (octal),
@@ -73,6 +75,9 @@ requires the older ADM-3A parser.
   support `create <image-type> <file-name> [size-bytes]`, where an omitted size
   passes `0` and selects the type's default geometry.
 - [ ] Add front-panel support and additional PDP-11 disk controllers.
+- [ ] Port the ESP32 Wi-Fi network bridge: expose a guest DEUNA Ethernet
+  interface and bridge/NAT it through Android's active Wi-Fi network, with
+  profile-configured MAC, guest address, netmask, and gateway.
 
 ## Build
 
