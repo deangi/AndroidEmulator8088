@@ -99,6 +99,9 @@ void Engine::reset(const uint16_t entryPc)
     machine.reset(false);
     machine.getCpu()->reset();
     machine.getCpu()->setPC(entryPc);
+    // Mirrors the upstream debugger's stopped state.  runInstructions()
+    // asserts it again when host execution resumes, enabling KW11-L ticks.
+    *console.get_running_flag() = false;
 }
 
 void Engine::setProgramCounter(const uint16_t entryPc)
@@ -128,6 +131,10 @@ bool Engine::config(const std::string& parameter)
 
 uint64_t Engine::runInstructions(const uint64_t count)
 {
+    // The Android session owns the run loop rather than using the upstream
+    // debugger.  KW11-L uses this flag to distinguish a running machine from
+    // a front-panel-stopped one, so assert it for every execution slice.
+    *console.get_running_flag() = true;
     const uint64_t before = machine.getCpu()->get_instructions_executed_count();
     constexpr uint32_t deviceServiceQuantum = 500;
     uint64_t remaining = count;
