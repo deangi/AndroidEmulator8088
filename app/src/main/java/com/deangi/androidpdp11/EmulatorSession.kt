@@ -132,7 +132,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
     }
 
     fun captureDiagnostics() {
-        latestDiagnostics.value = "Diagnostics requested…"
+        latestDiagnostics.value = "Diagnostics requested..."
         pdp11Core.requestDiagnostics()
         scope.launch {
             while (isActive) {

@@ -2320,7 +2320,14 @@ bool cpu::misc_operations(const uint16_t instr)
 
 		case 0b0000000000000001: // WAIT
 			{
-#if defined(ESP32)
+#if defined(ANDROID)
+				// The Android engine will continue to call step_fast() while the
+				// processor is waiting, allowing instruction-time devices to run.
+				// The WAIT state is handled at the start of step_impl(), so do not
+				// accept an interrupt or fetch the next instruction here.
+				waiting = true;
+				return true;
+#elif defined(ESP32)
 				if (check_if_interrupts_pending() == false) {
 					if (wait_stuck == false) {
 						wait_stuck = true;
@@ -3668,7 +3675,18 @@ bool cpu::step_impl()
 {
 	instructions_executed++;
 
-#if defined(ESP32)
+	#if defined(ANDROID)
+	if (waiting) {
+		// WAIT is an idle CPU state, not a host-thread sleep.  The engine
+		// advances simulated time after this return, delivering scheduled
+		// device events.  Keep the guest PC unchanged until an interrupt is
+		// actually pending; the normal interrupt path below vectors it.
+		if (!check_if_interrupts_pending())
+			return true;
+		waiting = false;
+		wait_stuck = false;
+	}
+	#elif defined(ESP32)
 	if (waiting) {
 		if (!check_if_interrupts_pending()) {
 			vTaskDelay(1);
