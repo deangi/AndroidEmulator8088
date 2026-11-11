@@ -196,6 +196,16 @@ void kw11_l::tick()
 	}
 }
 
+void kw11_l::diagnostic_state(uint16_t *const csr, uint64_t *const ticks,
+		uint64_t *const enabled, uint64_t *const interrupts)
+{
+	my_unique_lock lck(&lc_csr_lock);
+	if (csr)        *csr = lf_csr;
+	if (ticks)      *ticks = total_ticks;
+	if (enabled)    *enabled = enabled_ticks;
+	if (interrupts) *interrupts = int_triggered;
+}
+
 #if !defined(TEENSY4_1) && !defined(BUILD_FOR_PICO2W)
 void kw11_l::operator()()
 {

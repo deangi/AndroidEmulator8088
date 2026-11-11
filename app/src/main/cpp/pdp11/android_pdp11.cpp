@@ -318,6 +318,14 @@ std::string Engine::diagnostics()
     if (auto* tty = machine.getTty())
         out << "KL11 TKS=" << std::setw(6) << tty->read_word(PDP11TTY_TKS)
             << " TPS=" << std::setw(6) << tty->read_word(PDP11TTY_TPS) << "\r\n";
+    if (auto* kw11 = machine.getKW11_L()) {
+        uint16_t csr = 0;
+        uint64_t ticks = 0, enabled = 0, interrupts = 0;
+        kw11->diagnostic_state(&csr, &ticks, &enabled, &interrupts);
+        out << "KW11-L CSR=" << std::setw(6) << csr
+            << std::dec << " ticks=" << ticks
+            << " enabled=" << enabled << " interrupts=" << interrupts << "\r\n";
+    }
     out << std::dec << "Scheduler now=" << scheduler.now() << " next=";
     const auto next = scheduler.nextDue();
     if (next == UINT64_MAX) out << "none"; else out << next;

@@ -67,6 +67,9 @@ public:
 	// starting the host timer used by desktop/embedded builds.
 	void     attach_console(console *const cnsl);
 	void     tick();
+	// A coherent, non-destructive snapshot for host diagnostics.
+	void     diagnostic_state(uint16_t *csr, uint64_t *ticks,
+			uint64_t *enabled, uint64_t *interrupts);
 #if !defined(TEENSY4_1)
 	void     operator()();
 #endif
