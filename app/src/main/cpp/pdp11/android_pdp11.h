@@ -51,6 +51,7 @@ public:
     bool mountRl(int unit, int descriptor);
     bool dismountRl(int unit);
     bool bootRl(int unit);
+    std::string diagnostics();
     void enqueueInput(uint8_t value);
     bool hasPendingInput();
     std::vector<uint8_t> drainConsole();

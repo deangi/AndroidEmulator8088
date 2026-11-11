@@ -89,6 +89,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
     var bootedProfile by session.bootedProfile
     var diskError by session.diskError
     var systemInfoVersion by session.systemInfoVersion
+    var latestDiagnostics by session.latestDiagnostics
     var printerError by session.printerError
     var printerFile by session.printerFile
     var printerPending by session.printerPending
@@ -178,6 +179,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                 onSystemInfo = {
                     systemInfoVersion++
                 },
+                onDiagnostics = { session.captureDiagnostics(); systemInfoVersion++ },
                 telnetRequested = telnetRequested,
                 onToggleTelnet = {
                     if (telnetRequested) {
@@ -193,7 +195,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                 },
             )
 
-            StatusArea(snapshot, selectedProfile, emulatorRunning, bootedProfile, telnetRequested, telnetStatus, diskError, systemInfoVersion, printerFile, printerError)
+            StatusArea(snapshot, selectedProfile, emulatorRunning, bootedProfile, telnetRequested, telnetStatus, diskError, systemInfoVersion, printerFile, printerError, latestDiagnostics)
         }
     }
     if (printerDialogOpen) {
@@ -448,6 +450,7 @@ private fun ConsoleMenu(
     onManageDrives: () -> Unit,
     onPrinter: () -> Unit,
     onSystemInfo: () -> Unit,
+    onDiagnostics: () -> Unit,
     telnetRequested: Boolean,
     onToggleTelnet: () -> Unit,
 ) {
@@ -462,6 +465,7 @@ private fun ConsoleMenu(
             Button(onClick = onChooseStorage) { Text(if (hasStorage) "Storage" else "Choose storage") }
             Button(onClick = onEditConfig, enabled = hasStorage) { Text("Config") }
             Button(onClick = onSystemInfo) { Text("System info") }
+            Button(onClick = onDiagnostics, enabled = hasStorage) { Text("Diagnostics") }
             Button(onClick = onToggleTelnet, enabled = hasStorage) { Text(if (telnetRequested) "Stop Telnet" else "Start Telnet") }
         }
     }
@@ -479,8 +483,9 @@ private fun StatusArea(
     systemInfoVersion: Int,
     printerFile: String?,
     printerError: String,
+    latestDiagnostics: String,
 ) {
-    val status = remember(snapshot, selectedProfile, bootedProfile, emulatorRunning, telnetRequested, telnetStatus, diskError, systemInfoVersion, printerFile, printerError) {
+    val status = remember(snapshot, selectedProfile, bootedProfile, emulatorRunning, telnetRequested, telnetStatus, diskError, systemInfoVersion, printerFile, printerError, latestDiagnostics) {
         val telnet = when {
             !telnetRequested -> "off"
             telnetStatus.error != null -> "error: ${telnetStatus.error}"
@@ -514,6 +519,7 @@ private fun StatusArea(
             if (drives.isEmpty()) add("  (none)")
             else drives.forEach { (drive, image) -> add("  $drive: $image") }
             if (diskError.isNotEmpty()) { add(""); add("Disk error: $diskError") }
+            if (latestDiagnostics.isNotEmpty()) { add(""); add(latestDiagnostics) }
         }
         Adm3aTerminal().apply { feed(lines.joinToString("\r\n").encodeToByteArray()) }
     }

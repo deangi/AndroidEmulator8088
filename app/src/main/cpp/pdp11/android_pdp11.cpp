@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstring>
+#include <iomanip>
+#include <sstream>
 #include <unistd.h>
 
 #include "tty.h"
@@ -289,6 +291,35 @@ bool Engine::bootRl(const int unit)
         return false;
     reset(*entry);
     return true;
+}
+
+std::string Engine::diagnostics()
+{
+    auto* cpu = machine.getCpu();
+    std::ostringstream out;
+    out << std::oct << std::setfill('0');
+    out << "PDP-11 diagnostics\r\n";
+    out << "CPU PC=" << std::setw(6) << cpu->getPC()
+        << " PSW=" << std::setw(6) << cpu->getPSW()
+        << " IPL=" << std::dec << cpu->getPSW_spl()
+        << " WAIT=" << (cpu->is_waiting() ? "yes" : "no") << "\r\n";
+    out << std::oct << "R0-R5";
+    for (int r = 0; r < 6; ++r) out << " " << std::setw(6) << cpu->get_register(r);
+    out << "\r\nIRQ";
+    const auto queued = cpu->get_queued_interrupts();
+    for (int level = 1; level < 8; ++level)
+        for (const auto vector : queued[level]) out << " BR" << std::dec << level << ":" << std::oct << std::setw(3) << vector;
+    out << "\r\n";
+    if (auto* tty = machine.getTty())
+        out << "KL11 TKS=" << std::setw(6) << tty->read_word(PDP11TTY_TKS)
+            << " TPS=" << std::setw(6) << tty->read_word(PDP11TTY_TPS) << "\r\n";
+    out << std::dec << "Scheduler now=" << scheduler.now() << " next=";
+    const auto next = scheduler.nextDue();
+    if (next == UINT64_MAX) out << "none"; else out << next;
+    out << " stop=" << scheduler.activeStop() << "\r\n";
+    if (machine.getRK05()) out << "RK05 attached\r\n";
+    if (machine.getRL02()) out << "RL11 attached\r\n";
+    return out.str();
 }
 
 void Engine::enqueueInput(const uint8_t value) { console.enqueue_input(value); }

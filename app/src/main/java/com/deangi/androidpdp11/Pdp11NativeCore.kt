@@ -9,6 +9,7 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private var handle = nativeCreate()
 
     val processorId: String get() = withHandle { nativeProcessorId(it) }
+    fun diagnostics(): String = withHandle { nativeDiagnostics(it) }
     var memorySizeBytes: Int
         get() = withHandle { nativeMemorySizeBytes(it) }
         set(value) = withHandle { nativeSetMemorySizeBytes(it, value) }
@@ -42,6 +43,7 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private external fun nativeCreate(): Long
     private external fun nativeDestroy(handle: Long)
     private external fun nativeProcessorId(handle: Long): String
+    private external fun nativeDiagnostics(handle: Long): String
     private external fun nativeReset(handle: Long, pc: Int)
     private external fun nativeConfig(handle: Long, parameter: String): Boolean
     private external fun nativeSetProgramCounter(handle: Long, pc: Int)

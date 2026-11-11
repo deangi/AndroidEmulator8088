@@ -28,6 +28,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
     val selectedProfile = mutableStateOf(snapshot.value?.profiles?.firstOrNull())
     val diskError = mutableStateOf("")
     val systemInfoVersion = mutableIntStateOf(0)
+    val latestDiagnostics = mutableStateOf("")
     val printerError = mutableStateOf("")
     val printerFile = mutableStateOf<String?>(null)
     val printerPending = mutableStateOf<ByteArray?>(null)
@@ -130,6 +131,13 @@ class EmulatorSession(context: Context) : AutoCloseable {
         emulatorRunning.value = true
     }
 
+    fun captureDiagnostics() {
+        val text = pdp11Core.diagnostics()
+        latestDiagnostics.value = text
+        runCatching { storage.appendDiagnostics(text) }
+            .onFailure { latestDiagnostics.value = "$text\r\nLog write failed: ${it.message}" }
+    }
+
     private fun shellCommand(input: String): String {
         val parts = input.trim().split(Regex("\\s+"), limit = 2)
         return when (parts.firstOrNull()?.lowercase().orEmpty()) {
@@ -138,6 +146,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
             "status" -> runBlocking(Dispatchers.Main.immediate) {
                 "${AppBuildInfo.displayName}\r\nEmulator: ${if (emulatorRunning.value) "running" else "stopped"}\r\nProfile: ${bootedProfile.value?.fileName ?: selectedProfile.value?.fileName ?: "none"}\r\n"
             }
+            "diagnostics", "diag" -> pdp11Core.diagnostics()
             "drives" -> runBlocking(Dispatchers.Main.immediate) {
                 bootedProfile.value?.drives?.toSortedMap()?.entries?.joinToString("") { (drive, image) ->
                     "$drive: $image\r\n"
