@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <atomic>
 #include <deque>
 #include <mutex>
 #include <string>
@@ -52,6 +53,8 @@ public:
     bool dismountRl(int unit);
     bool bootRl(int unit);
     std::string diagnostics();
+    void requestDiagnostics() { diagnosticsRequested.store(true); }
+    std::string takeDiagnostics();
     void enqueueInput(uint8_t value);
     bool hasPendingInput();
     std::vector<uint8_t> drainConsole();
@@ -65,6 +68,9 @@ private:
     // device will consume this when its ESP32 implementation is ported.
     bool kwpEnabled { false };
     uint32_t kw11InstructionTicks { 0 };
+    std::atomic<bool> diagnosticsRequested { false };
+    std::mutex diagnosticsLock;
+    std::string pendingDiagnostics;
     void serviceTimedDevices(uint32_t elapsedInstructions);
     bus machine;
 };

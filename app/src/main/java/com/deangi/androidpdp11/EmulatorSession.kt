@@ -132,13 +132,20 @@ class EmulatorSession(context: Context) : AutoCloseable {
     }
 
     fun captureDiagnostics() {
+        latestDiagnostics.value = "Diagnostics requested…"
+        pdp11Core.requestDiagnostics()
         scope.launch {
-            val result = withContext(Dispatchers.Default) {
-                val text = pdp11Core.diagnostics()
-                runCatching { storage.appendDiagnostics(text) }
-                    .fold(onSuccess = { text }, onFailure = { "$text\r\nLog write failed: ${it.message}" })
+            while (isActive) {
+                delay(50)
+                val text = pdp11Core.takeDiagnostics()
+                if (text.isNotEmpty()) {
+                    latestDiagnostics.value = withContext(Dispatchers.IO) {
+                        runCatching { storage.appendDiagnostics(text) }
+                            .fold(onSuccess = { text }, onFailure = { "$text\r\nLog write failed: ${it.message}" })
+                    }
+                    return@launch
+                }
             }
-            latestDiagnostics.value = result
         }
     }
 

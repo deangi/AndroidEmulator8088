@@ -3,7 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-val appVersion = "0.3.14"
+val appVersion = "0.3.15"
 val buildDateUtc = "2026-11-09"
 
 android {
@@ -14,7 +14,7 @@ android {
         applicationId = "com.deangi.androidpdp11"
         minSdk = 26
         targetSdk = 35
-        versionCode = 314
+        versionCode = 315
         versionName = appVersion
 
         buildConfigField("String", "APP_VERSION", "\"$appVersion\"")

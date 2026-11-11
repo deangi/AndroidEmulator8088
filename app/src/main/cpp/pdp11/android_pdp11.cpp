@@ -150,6 +150,11 @@ uint64_t Engine::runInstructions(const uint64_t count)
             machine.getCpu()->step_fast();
             scheduler.advance(1);
             ++executed;
+            if (diagnosticsRequested.exchange(false)) {
+                const auto snapshot = diagnostics();
+                std::lock_guard<std::mutex> lock(diagnosticsLock);
+                pendingDiagnostics = snapshot;
+            }
         }
         scheduler.deliverDue(scheduler.now());
         if (executed > 0)
@@ -320,6 +325,14 @@ std::string Engine::diagnostics()
     if (machine.getRK05()) out << "RK05 attached\r\n";
     if (machine.getRL02()) out << "RL11 attached\r\n";
     return out.str();
+}
+
+std::string Engine::takeDiagnostics()
+{
+    std::lock_guard<std::mutex> lock(diagnosticsLock);
+    auto result = pendingDiagnostics;
+    pendingDiagnostics.clear();
+    return result;
 }
 
 void Engine::enqueueInput(const uint8_t value) { console.enqueue_input(value); }
