@@ -385,9 +385,14 @@ private fun ConfigEditorDialog(
                 if (documents.isEmpty()) {
                     Text("No pdpconfig*.ini or wificonfig*.ini files were found.")
                 } else {
-                    Row {
+                    // A row silently ran off the dialog on small screens.
+                    // Keep every discovered configuration reachable.
+                    Column(
+                        modifier = Modifier.fillMaxWidth().height(130.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
                         documents.forEach { document ->
-                            TextButton(onClick = { selected = document }) {
+                            TextButton(onClick = { selected = document }, modifier = Modifier.fillMaxWidth()) {
                                 Text(document.fileName, color = if (document == selected) Color(0xFF55FF8A) else Color.Unspecified)
                             }
                         }
@@ -397,6 +402,7 @@ private fun ConfigEditorDialog(
                         onValueChange = { content = it },
                         modifier = Modifier.fillMaxWidth().height(300.dp),
                         label = { Text(selected?.fileName.orEmpty()) },
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
                     )
                 }
             }
