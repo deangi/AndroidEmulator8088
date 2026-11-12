@@ -27,6 +27,8 @@
 #include "../kek_deuna.h"
 #include "../kw11.h"
 #include "../platform.h"
+#elif defined(ANDROID)
+#include "../kek_lp11.h"
 #include "rl02.h"
 #endif
 
@@ -499,7 +501,7 @@ uint16_t bus::read_IO(const uint16_t a, const word_mode_t word_mode, const int r
 		DOLOG(log_ss::LS_BUS_IO, "READ-I/O DEUNA %06o: %06o", a, temp);
 		return temp;
 	}
-#else
+#elif !defined(ANDROID)
 	if (a == ADDR_LP11CSR) { // printer CSR — DONE always set
 		uint16_t temp = 0200;
 		DOLOG(log_ss::LS_BUS_IO, "READ-I/O LP11 CSR: %o", temp);
@@ -510,6 +512,11 @@ uint16_t bus::read_IO(const uint16_t a, const word_mode_t word_mode, const int r
 		DOLOG(log_ss::LS_BUS_IO, "READ-I/O LP11 DB: 0");
 		return 0;
 	}
+#endif
+
+#if defined(ANDROID)
+	if (kek_lp11::contains((uint16_t)a))
+		return word_mode == wm_byte ? kek_lp11::read_byte((uint16_t)a) : kek_lp11::read_word((uint16_t)a);
 #endif
 
 	/// MMU ///
@@ -973,13 +980,23 @@ bool bus::write_IO(const uint16_t a, const word_mode_t word_mode, const int page
 		}
 		return false;
 	}
-#else
+#elif !defined(ANDROID)
 	if (a == ADDR_LP11CSR) {
 		DOLOG(log_ss::LS_BUS_IO, "WRITE-I/O LP11 CSR: %06o", value);
 		return false;
 	}
 	if (a == ADDR_LP11DB) {
 		DOLOG(log_ss::LS_BUS_IO, "WRITE-I/O LP11 DB: %06o", value);
+		return false;
+	}
+#endif
+
+#if defined(ANDROID)
+	if (kek_lp11::contains((uint16_t)a)) {
+		const uint64_t now = c ? c->get_instructions_executed_count() : 0;
+		if (word_mode == wm_byte) kek_lp11::write_byte((uint16_t)a, (uint8_t)value, now);
+		else kek_lp11::write_word((uint16_t)a, value, now);
+		if (c && kek_lp11::take_interrupt()) c->queue_interrupt(kek_lp11::BR_LEVEL, kek_lp11::VECTOR);
 		return false;
 	}
 #endif

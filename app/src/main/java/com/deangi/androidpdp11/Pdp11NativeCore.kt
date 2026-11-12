@@ -33,9 +33,13 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     /** Attach the UDA50/MSCP DU0 image; native code retains a duplicated descriptor. */
     fun mountDu0(descriptor: Int): Boolean = withHandle { nativeMountDu0(it, descriptor) }
     fun bootDu0(): Boolean = withHandle { nativeBootDu0(it) }
+    fun mountDrive(name: String, descriptor: Int): Boolean = withHandle { nativeMountDrive(it, name, descriptor) }
+    fun dismountDrive(name: String): Boolean = withHandle { nativeDismountDrive(it, name) }
+    fun enumerateDrives(): String = withHandle { nativeEnumerateDrives(it) }
     override fun enqueueInput(value: Byte) = withHandle { nativeEnqueueInput(it, value) }
     override fun hasPendingConsoleInput(): Boolean = withHandle { nativeHasPendingConsoleInput(it) }
     override fun drainConsole(): ByteArray = withHandle { nativeDrainConsole(it) }
+    fun drainPrinter(): ByteArray = withHandle { nativeDrainPrinter(it) }
 
     override fun close() = synchronized(this) {
         if (handle != 0L) nativeDestroy(handle).also { handle = 0L }
@@ -67,9 +71,13 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private external fun nativeBootRl(handle: Long, unit: Int): Boolean
     private external fun nativeMountDu0(handle: Long, descriptor: Int): Boolean
     private external fun nativeBootDu0(handle: Long): Boolean
+    private external fun nativeMountDrive(handle: Long, name: String, descriptor: Int): Boolean
+    private external fun nativeDismountDrive(handle: Long, name: String): Boolean
+    private external fun nativeEnumerateDrives(handle: Long): String
     private external fun nativeEnqueueInput(handle: Long, value: Byte)
     private external fun nativeHasPendingConsoleInput(handle: Long): Boolean
     private external fun nativeDrainConsole(handle: Long): ByteArray
+    private external fun nativeDrainPrinter(handle: Long): ByteArray
 
     companion object {
         init { System.loadLibrary("androidpdp11") }

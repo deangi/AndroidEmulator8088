@@ -77,7 +77,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
         scope.launch {
             while (isActive) {
                 if (snapshot.value != null && printerError.value.isEmpty()) {
-                    if (printerPending.value == null) emulator.drainPrinter().takeIf { it.isNotEmpty() }?.let { printerPending.value = it }
+                    if (printerPending.value == null) pdp11Core.drainPrinter().takeIf { it.isNotEmpty() }?.let { printerPending.value = it }
                     val bytes = printerPending.value
                     if (bytes != null) {
                         try {
@@ -159,9 +159,16 @@ class EmulatorSession(context: Context) : AutoCloseable {
             }
             "diagnostics", "diag" -> pdp11Core.diagnostics()
             "drives" -> runBlocking(Dispatchers.Main.immediate) {
-                bootedProfile.value?.drives?.toSortedMap()?.entries?.joinToString("") { (drive, image) ->
-                    "$drive: $image\r\n"
-                } ?: "No PDP-11 drives are mounted.\r\n"
+                val configured = bootedProfile.value?.drives.orEmpty()
+                pdp11Core.enumerateDrives().lineSequence().filter { it.isNotBlank() }.joinToString("\r\n", postfix = "\r\n") { line ->
+                    val drive = line.substringBefore(' ').uppercase()
+                    val image = when {
+                        drive.startsWith("RL") -> configured[drive] ?: configured["DL${drive.last()}"]
+                        drive == "DU0" -> configured["DU0"]
+                        else -> configured[drive]
+                    }
+                    if (image.isNullOrBlank()) line else "$line file=$image"
+                }
             }
             "mount", "dismount" -> {
                 val isMount = parts[0].equals("mount", ignoreCase = true)
@@ -171,18 +178,13 @@ class EmulatorSession(context: Context) : AutoCloseable {
                 } else ShellDriveCommand.dismountArgument(parts.getOrNull(1)) to null
                 runBlocking(Dispatchers.Main.immediate) {
                     val current = bootedProfile.value
-                    check(emulatorRunning.value && current != null) { "Boot CP/M before changing drives" }
+                    check(emulatorRunning.value && current != null) { "Boot PDP-11 before changing drives" }
+                    if (image == null) storage.dismountPdpDrive(drive, pdp11Core) else storage.mountPdpDrive(drive, image, pdp11Core)
                     val assignments = if (image == null) current.drives - drive else current.drives + (drive to image)
-                    if (assignments == current.drives) "$drive: ${image ?: "already empty"}\r\n" else {
-                        val updated = current.copy(drives = assignments)
-                        storage.replaceMountedDisks(updated, emulator)
+                    val updated = current.copy(drives = assignments)
                         bootedProfile.value = updated
                         diskError.value = ""
-                        val warning = if (drive == current.bootDrive.uppercase())
-                            "Ensure a bootable floppy is mounted on $drive: before Ctrl-C or restart."
-                        else "Close affected files before changes; press Ctrl-C at the CP/M prompt."
-                        "${if (image == null) "Dismounted $drive:" else "Mounted $image on $drive:"}\r\n$warning\r\n"
-                    }
+                    "${if (image == null) "Dismounted $drive" else "Mounted $image on $drive"}\r\n"
                 }
             }
             "pwd" -> "/vPDP11\r\n"
@@ -211,7 +213,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
             }
             "create" -> {
                 val args = parts.getOrNull(1)?.split(Regex("\\s+")) ?: emptyList()
-                if (args.size == 2) storage.shellCreateDisk(args[0], args[1]) else "usage: create floppy <name.dsk> | create hdd <name.hdd>\r\n"
+                if (args.size in 2..3) storage.shellCreatePdpDisk(args[0], args[1], args.getOrNull(2)?.toLongOrNull() ?: 0) else "usage: create <rk05|rl01|rl02|du0> <name.dsk> [size-bytes]\r\n"
             }
             else -> "Unknown command: ${parts[0]} (type help)\r\n"
         }

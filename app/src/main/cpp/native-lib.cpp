@@ -205,6 +205,19 @@ Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeBootDu0(JNIEnv*, jobject, jlo
     return reinterpret_cast<pdp11android::Engine*>(handle)->bootDu0();
 }
 
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeMountDrive(JNIEnv* env, jobject, jlong handle, jstring name, jint descriptor) {
+    const char* text = env->GetStringUTFChars(name, nullptr); const bool ok = text && reinterpret_cast<pdp11android::Engine*>(handle)->mountDrive(text, descriptor); if (text) env->ReleaseStringUTFChars(name, text); return ok;
+}
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDismountDrive(JNIEnv* env, jobject, jlong handle, jstring name) {
+    const char* text = env->GetStringUTFChars(name, nullptr); const bool ok = text && reinterpret_cast<pdp11android::Engine*>(handle)->dismountDrive(text); if (text) env->ReleaseStringUTFChars(name, text); return ok;
+}
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeEnumerateDrives(JNIEnv* env, jobject, jlong handle) {
+    const auto text = reinterpret_cast<pdp11android::Engine*>(handle)->enumerateDrives(); return env->NewStringUTF(text.c_str());
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeEnqueueInput(JNIEnv*, jobject, jlong handle, jbyte value) {
     reinterpret_cast<pdp11android::Engine*>(handle)->enqueueInput(static_cast<uint8_t>(value));
@@ -218,4 +231,9 @@ Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeHasPendingConsoleInput(JNIEnv
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDrainConsole(JNIEnv* env, jobject, jlong handle) {
     return asByteArray(env, reinterpret_cast<pdp11android::Engine*>(handle)->drainConsole());
+}
+
+extern "C" JNIEXPORT jbyteArray JNICALL
+Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDrainPrinter(JNIEnv* env, jobject, jlong handle) {
+    return asByteArray(env, reinterpret_cast<pdp11android::Engine*>(handle)->drainPrinter());
 }

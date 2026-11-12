@@ -56,12 +56,16 @@ public:
     bool bootRl(int unit);
     bool mountDu0(int descriptor);
     bool bootDu0();
+    bool mountDrive(const std::string& name, int descriptor);
+    bool dismountDrive(const std::string& name);
+    std::string enumerateDrives();
     std::string diagnostics();
     void requestDiagnostics() { diagnosticsRequested.store(true); }
     std::string takeDiagnostics();
     void enqueueInput(uint8_t value);
     bool hasPendingInput();
     std::vector<uint8_t> drainConsole();
+    std::vector<uint8_t> drainPrinter();
     const char* processorId() const { return "PDP-11/70"; }
 
 private:

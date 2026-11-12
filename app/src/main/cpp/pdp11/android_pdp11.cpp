@@ -15,6 +15,7 @@
 #include "rk05.h"
 #include "rl02.h"
 #include "uda50.h"
+#include "kek_lp11.h"
 
 namespace pdp11android {
 
@@ -189,6 +190,8 @@ void Engine::serviceTimedDevices(const uint32_t elapsedInstructions)
     if (auto* rp = machine.getRP06()) rp->service_deferred();
     if (auto* uda = machine.getUDA50()) uda->service_deferred();
     if (auto* dz = machine.getDZ11()) dz->service_deferred();
+    kek_lp11::tick(scheduler.now());
+    if (kek_lp11::take_interrupt()) machine.getCpu()->queue_interrupt(kek_lp11::BR_LEVEL, kek_lp11::VECTOR);
 }
 
 void Engine::setMemorySizeBytes(uint32_t bytes)
@@ -360,6 +363,45 @@ bool Engine::bootDu0()
     return true;
 }
 
+bool Engine::mountDrive(const std::string& rawName, const int descriptor)
+{
+    std::string name = rawName;
+    std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+    if (name == "DU0" || name == "DUA0") return mountDu0(descriptor);
+    if (name.size() == 3 && (name.rfind("RL", 0) == 0 || name.rfind("DL", 0) == 0) && name[2] >= '0' && name[2] <= '3')
+        return mountRl(name[2] - '0', descriptor);
+    return false;
+}
+
+bool Engine::dismountDrive(const std::string& rawName)
+{
+    std::string name = rawName;
+    std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+    if (name.size() == 3 && (name.rfind("RL", 0) == 0 || name.rfind("DL", 0) == 0) && name[2] >= '0' && name[2] <= '3')
+        return dismountRl(name[2] - '0');
+    if (name == "DU0" || name == "DUA0") {
+        if (auto* controller = machine.getUDA50()) controller->attach_media(nullptr, nullptr, nullptr, nullptr);
+        du0Media.reset();
+        return true;
+    }
+    return false;
+}
+
+std::string Engine::enumerateDrives()
+{
+    std::ostringstream out;
+    // Return capabilities with state: callers need this to choose valid blank
+    // image sizes without knowing PDP controller geometry themselves.
+    out << "RK0 RK05 fixed=2494464 state=" << (machine.getRK05() ? "mounted" : "empty") << "\r\n";
+    auto* rl = machine.getRL02();
+    for (int unit = 0; unit < 4; ++unit)
+        out << "RL" << unit << " RL11 discrete=5242880,10485760 tolerance=20% state="
+            << (rl && size_t(unit) < rl->access_disk_backends()->size() && rl->access_disk_backends()->at(unit) ? "mounted" : "empty") << "\r\n";
+    out << "DU0 UDA50-MSCP range=102400..4294966784 alignment=512 state=" << (du0Media ? "mounted" : "empty") << "\r\n";
+    out << "RP0 RH11-RP range=102400..268435456 alignment=512 state=" << (machine.getRP06() ? "mounted" : "empty") << "\r\n";
+    return out.str();
+}
+
 std::string Engine::diagnostics()
 {
     auto* cpu = machine.getCpu();
@@ -404,6 +446,8 @@ std::string Engine::takeDiagnostics()
     pendingDiagnostics.clear();
     return result;
 }
+
+std::vector<uint8_t> Engine::drainPrinter() { return kek_lp11::drain_output(); }
 
 void Engine::enqueueInput(const uint8_t value) { console.enqueue_input(value); }
 bool Engine::hasPendingInput() { return console.poll_char(); }

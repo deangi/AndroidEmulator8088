@@ -297,6 +297,34 @@ class Vz80StorageRepository(private val context: Context) {
         }
     }
 
+    fun shellCreatePdpDisk(type: String, name: String, requestedSize: Long = 0): String = synchronized(mediaLock) {
+        ShellFileNames.validate(name)
+        val normalized = type.lowercase()
+        val default = when (normalized) { "rk05" -> 2494464L; "rl01" -> 5242880L; "rl02" -> 10485760L; "du", "du0", "mscp" -> 100 * 1024L; else -> throw IllegalArgumentException("type must be rk05, rl01, rl02, or du0") }
+        val size = if (requestedSize == 0L) default else requestedSize
+        require(size > 0 && (normalized !in setOf("du", "du0", "mscp") || size in 102400..4294966784L && size % 512 == 0L)) { "Invalid size for $type" }
+        if (normalized == "rk05") require(size == 2494464L) { "RK05 size must be 2494464" }
+        if (normalized == "rl01") require(size == 5242880L) { "RL01 size must be 5242880" }
+        if (normalized == "rl02") require(size == 10485760L) { "RL02 size must be 10485760" }
+        val root = requireNotNull(vz80Directory()) { "vPDP11 storage is unavailable" }
+        require(root.findFile(name) == null) { "Destination already exists: $name" }
+        val file = requireNotNull(root.createFile("application/octet-stream", name)) { "Could not create: $name" }
+        try {
+            requireNotNull(context.contentResolver.openOutputStream(file.uri, "w")).use { output ->
+                val zeros = ByteArray(8192); var left = size
+                while (left > 0) { val n = minOf(left, zeros.size.toLong()).toInt(); output.write(zeros, 0, n); left -= n }
+            }
+            check(file.length() == size) { "Image size verification failed" }
+            "Created $name ($size bytes, blank $type image)\r\n"
+        } catch (error: Exception) { file.delete(); throw error }
+    }
+
+    fun mountPdpDrive(drive: String, imageName: String, emulator: Pdp11NativeCore) = synchronized(mediaLock) {
+        val image = requireNotNull(vz80Directory()?.findFile(imageName)) { "Disk image not found: $imageName" }
+        requireNotNull(context.contentResolver.openFileDescriptor(image.uri, "rw")).use { check(emulator.mountDrive(drive, it.fd)) { "Engine rejected $drive image $imageName" } }
+    }
+    fun dismountPdpDrive(drive: String, emulator: Pdp11NativeCore) = synchronized(mediaLock) { check(emulator.dismountDrive(drive)) { "Engine rejected drive $drive" } }
+
     /** Open selected images without truncation; native code duplicates the descriptors. */
     fun bootFloppies(profile: Vz80Profile, emulator: NativeEmulator) = synchronized(mediaLock) { withDiskImages(profile) { fds, hddMask ->
         val boot = profile.bootDrive.singleOrNull()?.uppercaseChar()?.minus('A') ?: -1
