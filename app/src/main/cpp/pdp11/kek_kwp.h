@@ -7,4 +7,6 @@ void set_enabled(bool enabled); bool contains(uint16_t address); void reset(uint
 void tick(uint64_t now); bool take_interrupt(); uint16_t read_word(uint16_t address, uint64_t now);
 uint8_t read_byte(uint16_t address, uint64_t now); void write_word(uint16_t address, uint16_t value, uint64_t now);
 void write_byte(uint16_t address, uint8_t value, uint64_t now);
+void diagnostic_state(bool* enabled, uint16_t* csr, uint16_t* csb, uint16_t* counter,
+                      bool* interruptPending, uint64_t* lastInstruction, uint32_t* remainder);
 }

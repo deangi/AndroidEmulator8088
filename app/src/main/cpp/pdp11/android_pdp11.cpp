@@ -463,6 +463,18 @@ std::string Engine::diagnostics()
             << std::dec << " ticks=" << ticks
             << " enabled=" << enabled << " interrupts=" << interrupts << "\r\n";
     }
+    bool kwpPresent = false, kwpIrq = false;
+    uint16_t kwpCsr = 0, kwpCsb = 0, kwpCounter = 0;
+    uint64_t kwpLast = 0;
+    uint32_t kwpRemainder = 0;
+    kek_kwp::diagnostic_state(&kwpPresent, &kwpCsr, &kwpCsb, &kwpCounter,
+        &kwpIrq, &kwpLast, &kwpRemainder);
+    out << std::oct << "KW11-P enabled=" << (kwpPresent ? "yes" : "no")
+        << " CSR=" << std::setw(6) << kwpCsr
+        << " CSB=" << std::setw(6) << kwpCsb
+        << " CNTR=" << std::setw(6) << kwpCounter
+        << std::dec << " irq=" << (kwpIrq ? "yes" : "no")
+        << " last=" << kwpLast << " remainder=" << kwpRemainder << "\r\n";
     out << std::dec << "Scheduler now=" << scheduler.now() << " next=";
     const auto next = scheduler.nextDue();
     if (next == UINT64_MAX) out << "none"; else out << next;

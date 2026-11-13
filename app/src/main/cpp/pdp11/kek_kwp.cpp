@@ -26,4 +26,5 @@ uint16_t read_word(uint16_t a,uint64_t now) { if(!enabled)return 0; update(now);
 uint8_t read_byte(uint16_t a,uint64_t now) { auto v=read_word(a&~1u,now); return a&1?uint8_t(v>>8):uint8_t(v); }
 void write_word(uint16_t a,uint16_t v,uint64_t now) { if(!enabled)return; update(now); switch(a&~1u){case CSR_ADDR:{auto old=csr; auto oldRate=old&RATE; bool running=old&GO; irq=false; csr=v&WRMASK; if(!(csr&GO)){remainder=0;if(v&FIX){cntr=(csr&UPDN)?uint16_t(cntr+1):uint16_t(cntr-1);if(!cntr)expired(1);}} else if(!running||oldRate!=(csr&RATE)){cntr=csb;remainder=0;}last=now;break;}case CSB_ADDR:csb=cntr=v;csr&=~uint16_t(ERR|DONE);irq=false;remainder=0;last=now;break;default:break;} }
 void write_byte(uint16_t a,uint8_t v,uint64_t now) { uint16_t old=(a&~1u)==CSR_ADDR?csr:(a&~1u)==CSB_ADDR?csb:cntr; old=(a&1)?uint16_t((old&0377)|(uint16_t(v)<<8)):uint16_t((old&0177400)|v); write_word(a&~1u,old,now); }
+void diagnostic_state(bool* e,uint16_t* c,uint16_t* b,uint16_t* n,bool* pending,uint64_t* instruction,uint32_t* r) { if(e)*e=enabled; if(c)*c=csr; if(b)*b=csb; if(n)*n=cntr; if(pending)*pending=irq; if(instruction)*instruction=last; if(r)*r=remainder; }
 }

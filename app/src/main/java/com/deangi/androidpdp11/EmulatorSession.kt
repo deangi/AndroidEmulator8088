@@ -147,6 +147,10 @@ class EmulatorSession(context: Context) : AutoCloseable {
                 delay(50)
                 val text = pdp11Core.takeDiagnostics()
                 if (text.isNotEmpty()) {
+                    // Use the common console router so a diagnostic button
+                    // request is visible and copyable from Telnet as well as
+                    // the local terminal/status panel.
+                    console.publishOutput(("\r\n" + text + "\r\n").encodeToByteArray())
                     latestDiagnostics.value = withContext(Dispatchers.IO) {
                         runCatching { storage.appendDiagnostics(text) }
                             .fold(onSuccess = { text }, onFailure = { "$text\r\nLog write failed: ${it.message}" })
