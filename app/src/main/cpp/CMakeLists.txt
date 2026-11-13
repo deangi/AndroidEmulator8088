@@ -4,6 +4,7 @@ project("androidpdp11")
 add_library(androidpdp11 SHARED
     native-lib.cpp
     pdp11/android_pdp11.cpp
+    pdp11/kek_kwp.cpp
     pdp11/kek_lp11.cpp
     pdp11/instruction_scheduler.cpp
     core/portable_z80.cpp

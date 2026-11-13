@@ -28,6 +28,7 @@
 #include "../kw11.h"
 #include "../platform.h"
 #elif defined(ANDROID)
+#include "../kek_kwp.h"
 #include "../kek_lp11.h"
 #include "rl02.h"
 #endif
@@ -486,6 +487,11 @@ uint16_t bus::read_IO(const uint16_t a, const word_mode_t word_mode, const int r
 #if defined(ESP32)
 	if (kek_kwp::contains(a))
 		return word_mode == wm_byte ? kek_kwp::read_byte(a) : kek_kwp::read_word(a);
+#elif defined(ANDROID)
+	if (kek_kwp::contains(a)) {
+		const uint64_t now = c ? c->get_instructions_executed_count() : 0;
+		return word_mode == wm_byte ? kek_kwp::read_byte(a, now) : kek_kwp::read_word(a, now);
+	}
 #endif
 
 #if defined(ESP32)
@@ -1004,6 +1010,12 @@ bool bus::write_IO(const uint16_t a, const word_mode_t word_mode, const int page
 #if defined(ESP32)
 	if (kek_kwp::contains(a)) {
 		word_mode == wm_byte ? kek_kwp::write_byte(a, value) : kek_kwp::write_word(a, value);
+		return false;
+	}
+#elif defined(ANDROID)
+	if (kek_kwp::contains(a)) {
+		const uint64_t now = c ? c->get_instructions_executed_count() : 0;
+		word_mode == wm_byte ? kek_kwp::write_byte(a, value, now) : kek_kwp::write_word(a, value, now);
 		return false;
 	}
 #endif

@@ -16,6 +16,7 @@
 #include "rl02.h"
 #include "uda50.h"
 #include "kek_lp11.h"
+#include "kek_kwp.h"
 
 namespace pdp11android {
 
@@ -100,6 +101,7 @@ void Engine::reset(const uint16_t entryPc)
     // A PDP-11 INIT/reset affects CPU and I/O state, not installed RAM.
     // Android exposes clearMemory() as an explicit, separate host action.
     machine.reset(false);
+    kek_kwp::reset(scheduler.now());
     machine.getCpu()->reset();
     machine.getCpu()->setPC(entryPc);
     // Mirrors the upstream debugger's stopped state.  runInstructions()
@@ -123,10 +125,13 @@ bool Engine::config(const std::string& parameter)
         return false;
     if (value == "true" || value == "1" || value == "yes" || value == "on") {
         kwpEnabled = true;
+        kek_kwp::set_enabled(true);
+        kek_kwp::reset(scheduler.now());
         return true;
     }
     if (value == "false" || value == "0" || value == "no" || value == "off") {
         kwpEnabled = false;
+        kek_kwp::set_enabled(false);
         return true;
     }
     return false;
@@ -198,6 +203,8 @@ void Engine::serviceTimedDevices(const uint32_t elapsedInstructions)
     if (auto* rp = machine.getRP06()) rp->service_deferred();
     if (auto* uda = machine.getUDA50()) uda->service_deferred();
     if (auto* dz = machine.getDZ11()) dz->service_deferred();
+    kek_kwp::tick(scheduler.now());
+    if (kek_kwp::take_interrupt()) machine.getCpu()->queue_interrupt(kek_kwp::BR_LEVEL, kek_kwp::VECTOR);
     kek_lp11::tick(scheduler.now());
     if (kek_lp11::take_interrupt()) machine.getCpu()->queue_interrupt(kek_lp11::BR_LEVEL, kek_lp11::VECTOR);
 }
