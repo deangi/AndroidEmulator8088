@@ -108,22 +108,30 @@ class EmulatorSession(context: Context) : AutoCloseable {
         }
     }
 
-    fun bootPdp11(profile: Vz80Profile) {
+    /**
+     * Prepares UI state on the caller's (main) dispatcher, then performs all
+     * scoped-storage and image-descriptor work away from the UI thread.
+     */
+    suspend fun bootPdp11(profile: Vz80Profile) {
         emulatorRunning.value = false
         inputQueues.clear()
         bootedProfile.value = null
         terminal.personality = if (profile.terminal.equals("adm3a", ignoreCase = true)) TerminalPersonality.ADM3A else TerminalPersonality.VT100
         terminal.reset()
         activeConsoleCore = pdp11Core
-        // vpdp1170 defines mem_size_kw in 1024-word units; PDP-11 words are
-        // 16 bits, therefore each KW is 2048 addressable bytes.
-        profile.memorySizeKw?.let { pdp11Core.memorySizeBytes = it * 2048 }
-        profile.emulatorParameters.forEach { (name, value) ->
-            // Unsupported profile diagnostics are retained for forward
-            // compatibility; native cores selectively consume assignments.
-            pdp11Core.config("$name=$value")
+        withContext(Dispatchers.IO) {
+            // vpdp1170 defines mem_size_kw in 1024-word units; PDP-11 words are
+            // 16 bits, therefore each KW is 2048 addressable bytes.
+            profile.memorySizeKw?.let { pdp11Core.memorySizeBytes = it * 2048 }
+            profile.emulatorParameters.forEach { (name, value) ->
+                // Unsupported profile diagnostics are retained for forward
+                // compatibility; native cores selectively consume assignments.
+                pdp11Core.config("$name=$value")
+            }
+            // DocumentFile lookups and disk-image attachment may block on the
+            // Android document provider for seconds on a large media tree.
+            storage.bootPdp11(profile, pdp11Core)
         }
-        storage.bootPdp11(profile, pdp11Core)
         diskError.value = ""
         bootedProfile.value = profile
         console.publishOutput("[Booting ${profile.title.ifBlank { profile.fileName }} from ${profile.bootDrive.uppercase()}]\r\n".encodeToByteArray())

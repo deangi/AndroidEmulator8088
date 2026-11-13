@@ -11,7 +11,7 @@ terminal, foreground-service, Telnet, and document-storage scaffolding are
 being retained; the inherited Z80 CPU and CP/M-specific disk implementation
 are temporary and will be replaced in the PDP-11 engine phases.
 
-The current Phase 3 build is `0.3.22` (version code 322), dated 2026-11-12.
+The current Phase 3 build is `0.3.27` (version code 327), dated 2026-11-12.
 Phase numbers use the minor version (`0.1.x`, `0.2.x`, and so on); patch
 numbers advance for each build within a phase. Version `1.0.0` is reserved
 for a near-working prototype.
@@ -63,20 +63,27 @@ requires the older ADM-3A parser.
 - [x] Boot RL01/RL02 profiles and configure their mounted units from `pdpconfig*.ini`.
 - [x] Boot UDA50/MSCP DU0 media, including the 2.11BSD PiDP configuration.
 - [x] Report PDP-11 drive names (such as `RK0` and `RL0`) in system status.
-- [ ] Implement a PDP-11 LP11 line-printer device and connect it to Android
+- [x] Implement a PDP-11 LP11 line-printer device and connect it to Android
   printer capture in `vPDP11/printer`. Implement LPS at `177514` (octal),
   LPB at `177516` (octal), and interrupt vector `200` (octal), following the
   [LP11 section of the 1976 PDP-11 Peripherals Handbook](https://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP-11_PeripheralsHbk_1976.pdf).
   This will implement the standard `EmulatorCore.linePrinter: LinePrinterPort?`
   contract already shared by emulator engines, so printer bytes remain separate
   from the console/Telnet stream.
-- [ ] Add PDP-11 drive mount/dismount controls using native PDP device names.
-- [ ] Add Telnet-shell blank-image creation through `DrivePort.createBlankImage()`;
+- [x] Add native PDP-11 drive mount/dismount and enumeration for Telnet using
+  engine-hosted device names. Finish the corresponding Android drive-management UI.
+- [x] Add Telnet-shell blank-image creation through `DrivePort.createBlankImage()`;
   support `create <image-type> <file-name> [size-bytes]`, where an omitted size
   passes `0` and selects the type's default geometry.
+- [ ] Diagnose and fix boot failures for RSX-11M+ 4.6, UNIX V6, UNIX V7,
+  RSTS-7, and RSTS-9.3 profiles.
 - [ ] Retrofit the Z80 Telnet-shell drive commands to call the engine-hosted
   `DrivePort` interface exclusively, hiding CP/M/Z80 media details inside the
   Z80 engine adapter as the PDP-11 path now does.
+- [ ] Implement `[console] boot_script` for Android profiles: wait for the
+  configured console prompts and inject each corresponding response, matching
+  the ESP32 profile behavior. Keep `boot_input` as the immediate typeahead
+  mechanism.
 - [ ] Add front-panel support and additional PDP-11 disk controllers.
 - [ ] Port the ESP32 Wi-Fi network bridge: expose a guest DEUNA Ethernet
   interface and bridge/NAT it through Android's active Wi-Fi network, with

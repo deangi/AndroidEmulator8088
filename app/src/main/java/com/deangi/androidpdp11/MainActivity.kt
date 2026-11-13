@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -103,6 +105,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
     var profileSelectorOpen by remember { mutableStateOf(false) }
     var drivesOpen by remember { mutableStateOf(false) }
     var configEditorOpen by remember { mutableStateOf(false) }
+    var configLoading by remember { mutableStateOf(false) }
     var configDocuments by remember { mutableStateOf(emptyList<Vz80ConfigDocument>()) }
     val scope = rememberCoroutineScope()
     val terminal = session.terminal
@@ -145,19 +148,36 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                 hasStorage = snapshot != null,
                 onChooseStorage = { selectStorage.launch(null) },
                 onEditConfig = {
-                    configDocuments = storage.configDocuments()
-                    configEditorOpen = true
+                    if (!configLoading) {
+                        configLoading = true
+                        scope.launch {
+                            runCatching {
+                                // DocumentFile queries can be slow for a tree holding
+                                // large disk images.  Never perform them on Compose's
+                                // input/UI thread or Android will report an ANR.
+                                withContext(Dispatchers.IO) { storage.configDocuments() }
+                            }.onSuccess { documents ->
+                                configDocuments = documents
+                                configEditorOpen = true
+                            }.onFailure { error ->
+                                console.publishOutput("Could not read configuration files: ${error.message}\r\n".encodeToByteArray())
+                            }
+                            configLoading = false
+                        }
+                    }
                 },
                 onRestart = {
                     val booted = bootedProfile
                     if (booted != null) {
                         emulatorRunning = false
-                        runCatching { session.bootPdp11(booted) }
-                            .onSuccess {
-                                inputQueues.clear(); bootInput.arm(booted.bootText)
-                                diskError = ""; terminal.reset(); terminalVersion++; emulatorRunning = true
-                            }
-                            .onFailure { console.publishOutput("Boot failed: ${it.message}\r\n".encodeToByteArray()) }
+                        scope.launch {
+                            runCatching { session.bootPdp11(booted) }
+                                .onSuccess {
+                                    inputQueues.clear(); bootInput.arm(booted.bootText)
+                                    diskError = ""; terminal.reset(); terminalVersion++; emulatorRunning = true
+                                }
+                                .onFailure { console.publishOutput("Boot failed: ${it.message}\r\n".encodeToByteArray()) }
+                        }
                     } else {
                         terminal.showCornerTestPattern()
                         terminalVersion++
@@ -268,6 +288,14 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
             onDismiss = { configEditorOpen = false },
         )
     }
+    if (configLoading) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Loading configuration") },
+            text = { Text("Reading configuration files…") },
+            confirmButton = {},
+        )
+    }
     if (profileSelectorOpen) {
         BootProfileDialog(
             profiles = snapshot?.profiles.orEmpty(),
@@ -277,15 +305,17 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                 profileSelectorOpen = false
                 emulatorRunning = false
                 bootedProfile = null
-                runCatching { session.bootPdp11(profile) }
-                    .onSuccess {
-                        inputQueues.clear(); bootInput.arm(profile.bootText)
-                        terminal.reset(); terminalVersion++
-                        diskError = ""
-                        bootedProfile = profile
-                        emulatorRunning = true
-                    }
-                    .onFailure { console.publishOutput("Boot failed: ${it.message}\r\n".encodeToByteArray()) }
+                scope.launch {
+                    runCatching { session.bootPdp11(profile) }
+                        .onSuccess {
+                            inputQueues.clear(); bootInput.arm(profile.bootText)
+                            terminal.reset(); terminalVersion++
+                            diskError = ""
+                            bootedProfile = profile
+                            emulatorRunning = true
+                        }
+                        .onFailure { console.publishOutput("Boot failed: ${it.message}\r\n".encodeToByteArray()) }
+                }
             },
             onDismiss = { profileSelectorOpen = false },
         )
@@ -460,19 +490,32 @@ private fun ConsoleMenu(
     telnetRequested: Boolean,
     onToggleTelnet: () -> Unit,
 ) {
-    Column(modifier = Modifier.padding(top = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = onBoot, enabled = hasStorage) { Text("Boot") }
-            Button(onClick = onManageDrives, enabled = canManageDrives) { Text("Drives") }
-            Button(onClick = onRestart) { Text("Restart") }
-            Button(onClick = onPrinter, enabled = hasStorage) { Text("Printer") }
+    // Equal-width cells keep every action visible on the Fire display, even
+    // when Android applies a larger system font scale.
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        val menuColors = ButtonDefaults.buttonColors(
+            disabledContainerColor = Color(0xFF3E4742),
+            disabledContentColor = Color(0xFFC5CDC7),
+        )
+        val buttonPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Button(onClick = onBoot, enabled = hasStorage, modifier = Modifier.weight(1f).height(42.dp), colors = menuColors, contentPadding = buttonPadding) { Text("Boot", fontSize = 11.sp) }
+            Button(onClick = onManageDrives, enabled = canManageDrives, modifier = Modifier.weight(1f).height(42.dp), colors = menuColors, contentPadding = buttonPadding) { Text("Drives", fontSize = 11.sp) }
+            Button(onClick = onRestart, modifier = Modifier.weight(1f).height(42.dp), colors = menuColors, contentPadding = buttonPadding) { Text("Restart", fontSize = 11.sp) }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = onChooseStorage) { Text(if (hasStorage) "Storage" else "Choose storage") }
-            Button(onClick = onEditConfig, enabled = hasStorage) { Text("Config") }
-            Button(onClick = onSystemInfo) { Text("System info") }
-            Button(onClick = onDiagnostics, enabled = hasStorage) { Text("Diagnostics") }
-            Button(onClick = onToggleTelnet, enabled = hasStorage) { Text(if (telnetRequested) "Stop Telnet" else "Start Telnet") }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Button(onClick = onPrinter, enabled = hasStorage, modifier = Modifier.weight(1f).height(42.dp), colors = menuColors, contentPadding = buttonPadding) { Text("Printer", fontSize = 11.sp) }
+            Button(onClick = onChooseStorage, modifier = Modifier.weight(1f).height(42.dp), colors = menuColors, contentPadding = buttonPadding) { Text("Storage", fontSize = 11.sp) }
+            Button(onClick = onEditConfig, enabled = hasStorage, modifier = Modifier.weight(1f).height(42.dp), colors = menuColors, contentPadding = buttonPadding) { Text("Config", fontSize = 11.sp) }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Button(onClick = onSystemInfo, modifier = Modifier.weight(1f).height(42.dp), colors = menuColors, contentPadding = buttonPadding) { Text("System info", fontSize = 11.sp) }
+            Button(onClick = onDiagnostics, enabled = hasStorage, modifier = Modifier.weight(1f).height(42.dp), colors = menuColors, contentPadding = buttonPadding) { Text("Diagnostics", fontSize = 11.sp) }
+            Button(onClick = onToggleTelnet, enabled = hasStorage, modifier = Modifier.weight(1f).height(42.dp), colors = menuColors, contentPadding = buttonPadding) { Text(if (telnetRequested) "Stop Telnet" else "Start Telnet", fontSize = 11.sp) }
         }
     }
 }
