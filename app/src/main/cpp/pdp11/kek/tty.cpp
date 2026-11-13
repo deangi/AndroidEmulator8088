@@ -89,13 +89,14 @@ void tty::update_tx_interrupt()
 {
 	const uint16_t tps = registers[(PDP11TTY_TPS - PDP11TTY_BASE) / 2];
 	const bool should_assert = (tps & (TTY_DONE | TTY_IE)) == (TTY_DONE | TTY_IE);
-	bool cpu_has_irq = false;
 
-	if (b && b->getCpu()) {
-		cpu_has_irq = b->getCpu()->has_queued_interrupt(4, 064);
-	}
-
-	if (should_assert && !cpu_has_irq && b && b->getCpu()) {
+	// KL11 transmit DONE is a level which creates one request when it rises.
+	// Do not infer that the request was cleared merely because the CPU has
+	// accepted vector 064: while DONE remains set, repeatedly queuing it
+	// creates an interrupt storm and can prevent early OS startup code from
+	// making progress.  A subsequent TPB write clears DONE and releases this
+	// latch; the completion transition is then allowed to assert a new request.
+	if (should_assert && !tx_irq_asserted && b && b->getCpu()) {
 		tx_irq_asserted = true;
 		tx_ready_reported = true;
 		b->getCpu()->queue_interrupt(4, 064);
