@@ -634,10 +634,7 @@ void rl02::service_deferred()
 			const int spl = b->getCpu()->getPSW_spl();
 			const uint16_t cpu_pc = b->getCpu()->getPC();
 			const bool spl_ok = spl < 5;
-			// RSTS INIT's controller-test polling loop occupies the 06xxxx
-			// region.  Do not treat the RL bootstrap at 070000 as ready for
-			// BR5: its vector table is still bootstrap data at that point.
-			const bool in_poll = cpu_pc >= 060000 && cpu_pc < 070000;
+			const bool in_poll = cpu_pc >= 060000;
 			irq_pending_ticks++;
 			if (spl_ok && in_poll)
 				irq_spl_ok_ticks++;

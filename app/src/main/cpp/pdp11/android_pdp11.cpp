@@ -160,6 +160,14 @@ uint64_t Engine::runInstructions(const uint64_t count)
             machine.getCpu()->step_fast();
             scheduler.advance(1);
             ++executed;
+            // Match vpdp1170's active-only 16-instruction deferred-device
+            // cadence.  In particular, RSTS INIT expects an armed RL11 BR5
+            // completion promptly enough to catch its controller-test window;
+            // the normal 500-instruction timed-device batch is too coarse.
+            if ((executed & 15u) == 0) {
+                if (auto* rl = machine.getRL02(); rl && rl->needs_deferred_service())
+                    rl->service_deferred();
+            }
             if (diagnosticsRequested.exchange(false)) {
                 const auto snapshot = diagnostics();
                 std::lock_guard<std::mutex> lock(diagnosticsLock);
