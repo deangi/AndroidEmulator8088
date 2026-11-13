@@ -63,7 +63,7 @@ private:
 	int             deferred_device      { 0 };
 	int             deferred_poll_count  { 0 };
 	int             deferred_service_delay { -1 };
-#if defined(ESP32)
+#if defined(ESP32) || defined(ANDROID)
 	int             irq_pending_ticks    { 0 };
 	int             irq_spl_ok_ticks     { 0 };
 	// RSTS INIT: GETSTAT+IE completes under high SPL; later SPL drops and
@@ -119,7 +119,7 @@ public:
 	int      deferred_polls() const { return deferred_poll_count; }
 	uint8_t  deferred_cmd() const { return deferred_command; }
 	int      deferred_unit() const { return deferred_device; }
-#if defined(ESP32)
+#if defined(ESP32) || defined(ANDROID)
 	int      irq_ticks_remaining() const { return irq_pending_ticks; }
 #else
 	int      irq_ticks_remaining() const { return 0; }

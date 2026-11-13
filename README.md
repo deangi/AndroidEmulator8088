@@ -11,7 +11,7 @@ terminal, foreground-service, Telnet, and document-storage scaffolding are
 being retained; the inherited Z80 CPU and CP/M-specific disk implementation
 are temporary and will be replaced in the PDP-11 engine phases.
 
-The current Phase 3 build is `0.3.29` (version code 329), dated 2026-11-13.
+The current Phase 3 build is `0.3.30` (version code 330), dated 2026-11-13.
 Phase numbers use the minor version (`0.1.x`, `0.2.x`, and so on); patch
 numbers advance for each build within a phase. Version `1.0.0` is reserved
 for a near-working prototype.

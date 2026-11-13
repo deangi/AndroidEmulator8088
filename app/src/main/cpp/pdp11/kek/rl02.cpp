@@ -292,7 +292,7 @@ void rl02::reset(const bool hard)
 	deferred_device = 0;
 	deferred_poll_count = 0;
 	deferred_service_delay = -1;
-#if defined(ESP32)
+#if defined(ESP32) || defined(ANDROID)
 	irq_pending_ticks = 0;
 	irq_spl_ok_ticks = 0;
 	if (b && b->getCpu())
@@ -622,7 +622,7 @@ void rl02::service_deferred()
 			complete_deferred_data_command();
 	}
 
-#if defined(ESP32)
+#if defined(ESP32) || defined(ANDROID)
 	if (irq_pending_ticks > 0) {
 		if (!((registers[(RL02_CSR - RL02_BASE) / 2] & 64)) || !b || !b->getCpu()) {
 			irq_pending_ticks = 0;
@@ -634,7 +634,10 @@ void rl02::service_deferred()
 			const int spl = b->getCpu()->getPSW_spl();
 			const uint16_t cpu_pc = b->getCpu()->getPC();
 			const bool spl_ok = spl < 5;
-			const bool in_poll = cpu_pc >= 060000;
+			// RSTS INIT's controller-test polling loop occupies the 06xxxx
+			// region.  Do not treat the RL bootstrap at 070000 as ready for
+			// BR5: its vector table is still bootstrap data at that point.
+			const bool in_poll = cpu_pc >= 060000 && cpu_pc < 070000;
 			irq_pending_ticks++;
 			if (spl_ok && in_poll)
 				irq_spl_ok_ticks++;
@@ -705,7 +708,7 @@ void rl02::write_word(const uint16_t addr, uint16_t v)
 	registers[reg] = v;
 
 	if (addr == RL02_CSR) {  // control status
-#if defined(ESP32)
+#if defined(ESP32) || defined(ANDROID)
 		irq_pending_ticks = 0;
 		irq_spl_ok_ticks = 0;
 		if (b && b->getCpu())
@@ -1060,7 +1063,7 @@ command_done:
 		if (do_int) {
 			if (registers[(RL02_CSR - RL02_BASE) / 2] & 64) {  // interrupt enable?
 				DOLOG(log_ss::LS_DISK, "RL02: triggering interrupt");
-#if defined(ESP32)
+#if defined(ESP32) || defined(ANDROID)
 				setBit(registers[(RL02_CSR - RL02_BASE) / 2], 7, true);
 				irq_pending_ticks = 1;  // service_deferred counts up to IRQ_DELAY_TICKS
 				rl02_trace("IRQ-SCHEDULE unit=%d vec=160 BR5 (wait SPL<5) CSR=%06o",
