@@ -220,6 +220,24 @@ void Engine::load(const uint32_t address, const uint8_t* bytes, const size_t cou
         machine.write_physical_block(address, bytes, static_cast<uint32_t>(count));
 }
 
+void Engine::clearProfileDevices()
+{
+    // First deliver an INIT-style full reset to the currently configured
+    // machine. reset() visits CPU, MMU and every attached device but, by
+    // design, does not clear PDP RAM.
+    reset();
+
+    // A profile describes the complete optional-storage topology.  Leaving a
+    // prior controller on the Unibus makes the next OS discover hardware it
+    // did not configure (for example an RK05 BR5/vector 0220 interrupt while
+    // booting an RL-only RSTS system).
+    machine.add_rk05(nullptr);
+    machine.add_rl02(nullptr);
+    machine.add_RP06(nullptr);
+    machine.add_UDA50(nullptr);
+    du0Media.reset();
+}
+
 bool Engine::bootRk05(const int descriptor)
 {
     if (descriptor < 0)

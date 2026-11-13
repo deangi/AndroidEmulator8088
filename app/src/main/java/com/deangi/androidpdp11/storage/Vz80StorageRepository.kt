@@ -424,6 +424,9 @@ class Vz80StorageRepository(private val context: Context) {
     }
 
     fun bootPdp11(profile: Vz80Profile, emulator: Pdp11NativeCore) {
+        // Profiles are complete machine configurations, not incremental drive
+        // changes.  Prevent controller/vector leakage from the prior boot.
+        emulator.clearProfileDevices()
         when (profile.bootDrive.trim().uppercase()) {
             "RK0", "DK0" -> bootPdp11Rk05(profile, emulator)
             "RL0", "DL0", "RL1", "DL1", "RL2", "DL2", "RL3", "DL3", "0", "1", "2", "3" -> bootPdp11Rl(profile, emulator)

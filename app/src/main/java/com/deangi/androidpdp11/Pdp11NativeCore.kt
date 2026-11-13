@@ -24,6 +24,8 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     fun zeroMemory() = withHandle { nativeZeroMemory(it) }
     fun clearMemory(value: Byte = 0) = withHandle { nativeClearMemory(it, value) }
     fun load(address: Int, bytes: ByteArray) = withHandle { nativeLoad(it, address, bytes) }
+    /** Start a profile with only the controllers explicitly mounted by that profile. */
+    fun clearProfileDevices() = withHandle { nativeClearProfileDevices(it) }
     fun bootRk05(descriptor: Int): Boolean = withHandle { nativeBootRk05(it, descriptor) }
     /** Notify the native RL11 controller that DL[unit] now has media. */
     fun mountRl(unit: Int, descriptor: Int): Boolean = withHandle { nativeMountRl(it, unit, descriptor) }
@@ -65,6 +67,7 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private external fun nativeClearMemory(handle: Long, value: Byte)
     private external fun nativeZeroMemory(handle: Long)
     private external fun nativeLoad(handle: Long, address: Int, bytes: ByteArray)
+    private external fun nativeClearProfileDevices(handle: Long)
     private external fun nativeBootRk05(handle: Long, descriptor: Int): Boolean
     private external fun nativeMountRl(handle: Long, unit: Int, descriptor: Int): Boolean
     private external fun nativeDismountRl(handle: Long, unit: Int): Boolean

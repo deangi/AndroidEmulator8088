@@ -50,6 +50,8 @@ public:
     void zeroMemory();
     void clearMemory(uint8_t value);
     void load(uint32_t address, const uint8_t* bytes, size_t count);
+    /** Remove profile-specific controllers before mounting a new boot profile. */
+    void clearProfileDevices();
     bool bootRk05(int descriptor);
     bool mountRl(int unit, int descriptor);
     bool dismountRl(int unit);

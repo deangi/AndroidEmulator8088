@@ -180,6 +180,11 @@ Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeBootRk05(JNIEnv*, jobject, jl
     return reinterpret_cast<pdp11android::Engine*>(handle)->bootRk05(descriptor);
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeClearProfileDevices(JNIEnv*, jobject, jlong handle) {
+    reinterpret_cast<pdp11android::Engine*>(handle)->clearProfileDevices();
+}
+
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeMountRl(JNIEnv*, jobject, jlong handle, jint unit, jint descriptor) {
     return reinterpret_cast<pdp11android::Engine*>(handle)->mountRl(unit, descriptor);
