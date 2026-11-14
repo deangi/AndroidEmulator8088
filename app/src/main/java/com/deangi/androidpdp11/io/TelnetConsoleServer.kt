@@ -1,5 +1,7 @@
 package com.deangi.androidpdp11.io
 
+import com.deangi.androidpdp11.EmulatorIdentity
+
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.net.ServerSocket
@@ -173,7 +175,7 @@ class TelnetConsoleServer {
                 IAC.toByte(), DO.toByte(), SUPPRESS_GO_AHEAD.toByte(),
                 IAC.toByte(), DO.toByte(), BINARY.toByte(),
             ))
-            stream.write("AndroidEmulatorPdp11 console\r\n".encodeToByteArray())
+            stream.write(EmulatorIdentity.consoleBanner().encodeToByteArray())
             stream.flush()
         } catch (_: Exception) {
             closeClientLocked()

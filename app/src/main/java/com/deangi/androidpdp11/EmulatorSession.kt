@@ -221,7 +221,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
                 } else ShellDriveCommand.dismountArgument(parts.getOrNull(1)) to null
                 runBlocking(Dispatchers.Main.immediate) {
                     val current = bootedProfile.value
-                    check(emulatorRunning.value && current != null) { "Boot PDP-11 before changing drives" }
+                    check(emulatorRunning.value && current != null) { "Boot ${EmulatorIdentity.emulatorName} before changing drives" }
                     if (image == null) storage.dismountPdpDrive(drive, pdp11Core) else storage.mountPdpDrive(drive, image, pdp11Core)
                     val assignments = if (image == null) current.drives - drive else current.drives + (drive to image)
                     val updated = current.copy(drives = assignments)
@@ -230,7 +230,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
                     "${if (image == null) "Dismounted $drive" else "Mounted $image on $drive"}\r\n"
                 }
             }
-            "pwd" -> "/vPDP11\r\n"
+            "pwd" -> "${EmulatorIdentity.shellPath()}\r\n"
             "ls" -> if (parts.size == 1) storage.shellList() else "usage: ls\r\n"
             "cat" -> if (parts.size == 2) storage.shellRead(parts[1]) else "usage: cat <file>\r\n"
             "cp" -> {

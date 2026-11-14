@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import android.os.ParcelFileDescriptor
+import com.deangi.androidpdp11.EmulatorIdentity
 import com.deangi.androidpdp11.NativeEmulator
 import com.deangi.androidpdp11.Pdp11NativeCore
 import com.deangi.androidpdp11.io.PrinterCapture
@@ -42,7 +43,7 @@ class Vz80StorageRepository(private val context: Context) {
     fun printerCapture(): PrinterCapture = PrinterCapture(context.contentResolver, ::vz80Directory)
 
     fun appendDiagnostics(text: String) = synchronized(mediaLock) {
-        val root = requireNotNull(vz80Directory()) { "vPDP11 storage is unavailable" }
+        val root = requireNotNull(vz80Directory()) { EmulatorIdentity.storageUnavailable() }
         val file = root.findFile("diagnostics.log") ?: root.createFile("text/plain", "diagnostics.log")
             ?: error("Could not create diagnostics.log")
         requireNotNull(context.contentResolver.openOutputStream(file.uri, "wa")) { "Could not write diagnostics.log" }
@@ -308,7 +309,7 @@ class Vz80StorageRepository(private val context: Context) {
         if (normalized == "rk05") require(size == 2494464L) { "RK05 size must be 2494464" }
         if (normalized == "rl01") require(size == 5242880L) { "RL01 size must be 5242880" }
         if (normalized == "rl02") require(size == 10485760L) { "RL02 size must be 10485760" }
-        val root = requireNotNull(vz80Directory()) { "vPDP11 storage is unavailable" }
+        val root = requireNotNull(vz80Directory()) { EmulatorIdentity.storageUnavailable() }
         require(root.findFile(name) == null) { "Destination already exists: $name" }
         val file = requireNotNull(root.createFile("application/octet-stream", name)) { "Could not create: $name" }
         try {
@@ -352,7 +353,7 @@ class Vz80StorageRepository(private val context: Context) {
         val imageName = profile.drives["RK0"]?.trim()?.trimStart('/')
             ?: throw IllegalArgumentException("RT-11 profile has no rk0 image")
         require(imageName.endsWith(".dsk", ignoreCase = true)) { "RK0 image must end in .dsk" }
-        val root = requireNotNull(vz80Directory()) { "vPDP11 storage is unavailable" }
+        val root = requireNotNull(vz80Directory()) { EmulatorIdentity.storageUnavailable() }
         val image = requireNotNull(root.findFile(imageName)) { "Disk image not found: $imageName" }
         require(image.isFile) { "Not a disk image: $imageName" }
         require(image.length() >= 512) { "Disk image is too small: $imageName" }
@@ -375,7 +376,7 @@ class Vz80StorageRepository(private val context: Context) {
             "RL3", "DL3", "3" -> 3
             else -> throw IllegalArgumentException("Invalid RL boot drive: ${profile.bootDrive}")
         }
-        val root = requireNotNull(vz80Directory()) { "vPDP11 storage is unavailable" }
+        val root = requireNotNull(vz80Directory()) { EmulatorIdentity.storageUnavailable() }
         val mounted = mutableSetOf<String>()
         for (unit in 0..3) {
             val imageName = profile.drives["DL$unit"]?.trim()?.trimStart('/').orEmpty()
@@ -400,7 +401,7 @@ class Vz80StorageRepository(private val context: Context) {
 
     /** Attach optional RL media plus the UDA50/MSCP DU0 image, then run the DU bootstrap. */
     fun bootPdp11Du0(profile: Vz80Profile, emulator: Pdp11NativeCore) = synchronized(mediaLock) {
-        val root = requireNotNull(vz80Directory()) { "vPDP11 storage is unavailable" }
+        val root = requireNotNull(vz80Directory()) { EmulatorIdentity.storageUnavailable() }
         val mounted = mutableSetOf<String>()
         // BSD's PiDP profile carries an RL companion pack.  It is not the
         // boot device, but it should be attached exactly as configured.

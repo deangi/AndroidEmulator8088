@@ -1,5 +1,7 @@
 package com.deangi.androidpdp11.io
 
+import com.deangi.androidpdp11.EmulatorIdentity
+
 /** Per-connection ESP32-compatible ESC >> host-shell router. */
 class TelnetShellSession(
     private val guestInput: (Byte) -> Unit,
@@ -55,7 +57,7 @@ class TelnetShellSession(
             }
             else -> if (c == '>'.code) {
                 escapeState = 0; active = true; line.clear()
-                write("\r\nAndroidEmulatorPdp11 management shell\r\nThe active emulator continues running. Type help; exit returns to the console.\r\nemulator:/> ")
+                write(EmulatorIdentity.managementShellBanner())
             } else {
                 guestInput(27); guestInput('>'.code.toByte()); escapeState = 0; accept(byte)
             }

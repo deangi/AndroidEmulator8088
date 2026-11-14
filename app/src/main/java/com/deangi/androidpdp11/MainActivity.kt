@@ -412,7 +412,7 @@ private fun ConfigEditorDialog(
         text = {
             Column {
                 if (documents.isEmpty()) {
-                    Text("No pdpconfig*.ini or wificonfig*.ini files were found.")
+                    Text("No ${EmulatorIdentity.profileFilePattern} or wificonfig*.ini files were found.")
                 } else {
                     // A row silently ran off the dialog on small screens.
                     // Keep every discovered configuration reachable.
@@ -456,7 +456,7 @@ private fun BootProfileDialog(
         text = {
             Column {
                 if (profiles.isEmpty()) {
-                    Text("No pdpconfig*.ini files were found in vPDP11.")
+                    Text("No ${EmulatorIdentity.profileFilePattern} files were found in ${EmulatorIdentity.emulatorName}.")
                 } else {
                     profiles.forEach { profile ->
                         TextButton(onClick = { onSelect(profile) }, modifier = Modifier.fillMaxWidth()) {
