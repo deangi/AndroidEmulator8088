@@ -1,4 +1,5 @@
 #include "android_v8088.h"
+#include "bios_blob.h"
 #include "cpu8086.h"
 #include <algorithm>
 #include <chrono>
@@ -14,7 +15,19 @@ extern unsigned short reg_ip;
 }
 namespace v8088android {
 Engine* Engine::current = nullptr;
-Engine::Engine() : ram(V8088_RAM_SIZE) { current = this; v8088_set_mem(ram.data()); v8088_init(0); reset(); }
+Engine::Engine() : ram(V8088_RAM_SIZE) {
+    current = this;
+
+    // v8088_init builds its decoder tables from the reset BIOS at F010:0000.
+    // The ESP32 implementation preloads this image before initializing the core;
+    // without it, the engine sees an all-zero BIOS and cannot execute the smoke
+    // program (or a configured boot image) correctly.
+    std::memcpy(ram.data() + 0xF0100, bios_blob, bios_blob_len);
+
+    v8088_set_mem(ram.data());
+    v8088_init(0);
+    reset();
+}
 Engine::~Engine() { clearProfileDevices(); if (current == this) current = nullptr; }
 Engine* Engine::active() { return current; }
 void Engine::reset(uint16_t) { v8088_reset(); if (smokeTest) installConsoleSmokeTest(); executed = 0; }

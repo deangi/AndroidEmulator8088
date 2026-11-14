@@ -4,7 +4,12 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+#if defined(ARDUINO)
 #include <pgmspace.h>
+#else
+// Android keeps the BIOS blob in normal read-only program storage.
+#define PROGMEM
+#endif
 
 static const size_t bios_blob_len = 7665;
 static const uint8_t bios_blob[] PROGMEM = {
