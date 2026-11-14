@@ -11,13 +11,23 @@ terminal, foreground-service, Telnet, and document-storage scaffolding are
 being retained; the inherited Z80 CPU and CP/M-specific disk implementation
 are temporary and will be replaced in the PDP-11 engine phases.
 
-The current Phase 3 build is `0.3.33` (version code 333), dated 2026-11-13.
+The current Phase 3 build is `0.3.34` (version code 334), dated 2026-11-13.
 Phase numbers use the minor version (`0.1.x`, `0.2.x`, and so on); patch
 numbers advance for each build within a phase. Version `1.0.0` is reserved
 for a near-working prototype.
 
 The PDP-11 target workspace is `vPDP11` under the document tree selected by
 the user. Disk images are deliberately not included in the repository or APK.
+
+The following supplied profiles now complete their initial boot sequence:
+
+- RT-11 V5.4F and XXDP-25
+- RSTS V04B-17, RSTS/E V7, and RSTS/E V9.3
+- RSX-11M V4.0 and RSX-11M+ V4.6 PiDP
+- UNIX V6, UNIX V7, and 2.11BSD PiDP
+
+RSX-11M+ V4.6 required UDA50/MSCP deferred servicing at the same
+16-instruction active-device cadence used by the ESP32 reference engine.
 
 ## First supported configuration
 
@@ -75,7 +85,7 @@ requires the older ADM-3A parser.
 - [x] Add Telnet-shell blank-image creation through `DrivePort.createBlankImage()`;
   support `create <image-type> <file-name> [size-bytes]`, where an omitted size
   passes `0` and selects the type's default geometry.
-- [ ] Diagnose and fix boot failures for RSX-11M+ 4.6, UNIX V6, UNIX V7,
+- [x] Diagnose and fix boot failures for RSX-11M+ 4.6, UNIX V6, UNIX V7,
   RSTS-7, and RSTS-9.3 profiles.
 - [ ] Retrofit the Z80 Telnet-shell drive commands to call the engine-hosted
   `DrivePort` interface exclusively, hiding CP/M/Z80 media details inside the

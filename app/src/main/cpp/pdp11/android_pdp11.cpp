@@ -22,6 +22,22 @@ namespace pdp11android {
 
 namespace {
 
+const char* udaStateName(const uda50::state_t state)
+{
+    switch (state) {
+    case uda50::state_t::step1: return "step1";
+    case uda50::state_t::step1_wrap: return "step1-wrap";
+    case uda50::state_t::step2: return "step2";
+    case uda50::state_t::step3: return "step3";
+    case uda50::state_t::step3_purge_sa: return "step3-purge-sa";
+    case uda50::state_t::step3_purge_ip: return "step3-purge-ip";
+    case uda50::state_t::step4: return "step4";
+    case uda50::state_t::run: return "run";
+    case uda50::state_t::dead: return "dead";
+    }
+    return "unknown";
+}
+
 // Android's Storage Access Framework gives us an already-authorized file
 // descriptor.  Keep the native RK05 backend descriptor-based; reopening a
 // /proc/self/fd path is not permitted on every Android build.
@@ -172,6 +188,11 @@ uint64_t Engine::runInstructions(const uint64_t count)
             if ((executed & 15u) == 0) {
                 if (auto* rl = machine.getRL02(); rl && rl->needs_deferred_service())
                     rl->service_deferred();
+                // MSCP ring ownership changes are also polled at the ESP32
+                // reference cadence.  A 500-instruction delay here can make
+                // an operating-system bootstrap miss its controller window.
+                if (auto* uda = machine.getUDA50(); uda && uda->needs_deferred_service())
+                    uda->service_deferred();
             }
             if (diagnosticsRequested.exchange(false)) {
                 const auto snapshot = diagnostics();
@@ -475,6 +496,15 @@ std::string Engine::diagnostics()
         << " CNTR=" << std::setw(6) << kwpCounter
         << std::dec << " irq=" << (kwpIrq ? "yes" : "no")
         << " last=" << kwpLast << " remainder=" << kwpRemainder << "\r\n";
+    if (auto* uda = machine.getUDA50()) {
+        out << std::oct << "UDA50 state=" << udaStateName(uda->get_state())
+            << " SA=" << std::setw(6) << uda->get_sa()
+            << " vector=" << std::setw(6) << uda->get_interrupt_vector()
+            << " comm=" << std::setw(8) << uda->get_communication_address()
+            << std::dec << " cmd-ring=" << uda->get_command_ring_length()
+            << " rsp-ring=" << uda->get_response_ring_length()
+            << " active=" << (uda->needs_deferred_service() ? "yes" : "no") << "\r\n";
+    }
     out << std::dec << "Scheduler now=" << scheduler.now() << " next=";
     const auto next = scheduler.nextDue();
     if (next == UINT64_MAX) out << "none"; else out << next;
