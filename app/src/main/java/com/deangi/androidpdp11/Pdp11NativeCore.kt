@@ -86,6 +86,6 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private external fun nativeDrainPrinter(handle: Long): ByteArray
 
     companion object {
-        init { System.loadLibrary("androidpdp11") }
+        init { System.loadLibrary("android8088") }
     }
 }

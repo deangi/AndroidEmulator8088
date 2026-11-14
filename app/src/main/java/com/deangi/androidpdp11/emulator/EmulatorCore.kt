@@ -61,9 +61,9 @@ data class EmulatorWorkspace(
     val printerDirectoryName: String = "printer",
 )
 
-val V_PDP11_WORKSPACE = EmulatorWorkspace(
-    directoryName = "vPDP11",
-    configurationFileName = "pdp11config.ini",
+val V8088_WORKSPACE = EmulatorWorkspace(
+    directoryName = "v8088",
+    configurationFileName = "v8088config.ini",
 )
 
 data class ExecutionResult(

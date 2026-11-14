@@ -1,18 +1,16 @@
 cmake_minimum_required(VERSION 3.22.1)
-project("androidpdp11")
+project("android8088")
 
-add_library(androidpdp11 SHARED
-    native-lib.cpp
-    pdp11/android_pdp11.cpp
-    pdp11/kek_kwp.cpp
-    pdp11/kek_lp11.cpp
-    pdp11/instruction_scheduler.cpp
-    core/portable_z80.cpp
-    core/z80.c
-)
+add_library(android8088 SHARED
+    native-8088.cpp
+    v8088/android_v8088.cpp
+    v8088/8086tiny.c)
 
-# Phase 2 porting boundary.  This is deliberately separate from the existing
-# JNI library while the Kotlin host still uses the inherited Z80 API.
+target_include_directories(android8088 PRIVATE v8088)
+find_library(log-lib log)
+target_link_libraries(android8088 PRIVATE ${log-lib})
+
+#[[ Legacy PDP-11 source list retained below as porting reference.
 add_library(pdp11core STATIC
     pdp11/compat/kek_vs_console.cpp
     pdp11/compat/kek_vs_log.cpp
@@ -60,4 +58,4 @@ target_include_directories(androidpdp11 PRIVATE pdp11/kek pdp11)
 target_compile_definitions(androidpdp11 PRIVATE IS_POSIX=0)
 
 find_library(log-lib log)
-target_link_libraries(androidpdp11 PRIVATE pdp11core ${log-lib})
+target_link_libraries(androidpdp11 PRIVATE pdp11core ${log-lib}) ]]

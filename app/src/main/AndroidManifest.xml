@@ -13,11 +13,11 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
-        android:label="AndroidEmulatorPdp11"
+        android:label="AndroidEmulator8088"
         android:supportsRtl="true"
         android:theme="@style/Theme.AndroidEmulatorPdp11">
         <service android:name=".EmulatorService" android:exported="false" android:foregroundServiceType="specialUse">
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Interactive PDP-11 emulator and user-controlled telnet console" />
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Interactive 8088 emulator and user-controlled telnet console" />
         </service>
         <activity
             android:name=".MainActivity"

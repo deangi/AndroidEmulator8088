@@ -1,0 +1,29 @@
+#include <jni.h>
+#include "v8088/android_v8088.h"
+using v8088android::Engine;
+static jbyteArray bytes(JNIEnv* e,std::vector<uint8_t> v){auto a=e->NewByteArray((jsize)v.size());if(!v.empty())e->SetByteArrayRegion(a,0,(jsize)v.size(),reinterpret_cast<jbyte*>(v.data()));return a;}
+extern "C" JNIEXPORT jlong JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeCreate(JNIEnv*,jobject){return (jlong)new Engine;}
+extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDestroy(JNIEnv*,jobject,jlong h){delete reinterpret_cast<Engine*>(h);}
+extern "C" JNIEXPORT jstring JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeProcessorId(JNIEnv*e,jobject,jlong h){return e->NewStringUTF(reinterpret_cast<Engine*>(h)->processorId());}
+extern "C" JNIEXPORT jstring JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDiagnostics(JNIEnv*e,jobject,jlong h){return e->NewStringUTF(reinterpret_cast<Engine*>(h)->diagnostics().c_str());}
+extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeRequestDiagnostics(JNIEnv*,jobject,jlong h){reinterpret_cast<Engine*>(h)->requestDiagnostics();}
+extern "C" JNIEXPORT jstring JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeTakeDiagnostics(JNIEnv*e,jobject,jlong h){return e->NewStringUTF(reinterpret_cast<Engine*>(h)->takeDiagnostics().c_str());}
+extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeReset(JNIEnv*,jobject,jlong h,jint p){reinterpret_cast<Engine*>(h)->reset(p);}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeConfig(JNIEnv*e,jobject,jlong h,jstring s){const char*x=e->GetStringUTFChars(s,0);bool ok=reinterpret_cast<Engine*>(h)->config(x?x:"");if(x)e->ReleaseStringUTFChars(s,x);return ok;}
+extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeSetProgramCounter(JNIEnv*,jobject,jlong h,jint p){reinterpret_cast<Engine*>(h)->setProgramCounter(p);}
+extern "C" JNIEXPORT jint JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeLastProgramCounter(JNIEnv*,jobject,jlong h){return reinterpret_cast<Engine*>(h)->lastProgramCounter();}
+extern "C" JNIEXPORT jlong JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeRunInstructions(JNIEnv*,jobject,jlong h,jlong n){return reinterpret_cast<Engine*>(h)->runInstructions(n);}
+extern "C" JNIEXPORT jint JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeMemorySizeBytes(JNIEnv*,jobject,jlong h){return reinterpret_cast<Engine*>(h)->memorySizeBytes();}
+extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeSetMemorySizeBytes(JNIEnv*,jobject,jlong h,jint n){reinterpret_cast<Engine*>(h)->setMemorySizeBytes(n);}
+extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeClearMemory(JNIEnv*,jobject,jlong h,jbyte v){reinterpret_cast<Engine*>(h)->clearMemory(v);}
+extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeZeroMemory(JNIEnv*,jobject,jlong h){reinterpret_cast<Engine*>(h)->zeroMemory();}
+extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeLoad(JNIEnv*e,jobject,jlong h,jint a,jbyteArray b){auto n=e->GetArrayLength(b);auto*p=e->GetByteArrayElements(b,0);reinterpret_cast<Engine*>(h)->load(a,(uint8_t*)p,n);e->ReleaseByteArrayElements(b,p,JNI_ABORT);}
+extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeClearProfileDevices(JNIEnv*,jobject,jlong h){reinterpret_cast<Engine*>(h)->clearProfileDevices();}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeMountDrive(JNIEnv*e,jobject,jlong h,jstring s,jint d){const char*x=e->GetStringUTFChars(s,0);bool ok=x&&reinterpret_cast<Engine*>(h)->mountDrive(x,d);if(x)e->ReleaseStringUTFChars(s,x);return ok;}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDismountDrive(JNIEnv*e,jobject,jlong h,jstring s){const char*x=e->GetStringUTFChars(s,0);bool ok=x&&reinterpret_cast<Engine*>(h)->dismountDrive(x);if(x)e->ReleaseStringUTFChars(s,x);return ok;}
+extern "C" JNIEXPORT jstring JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeEnumerateDrives(JNIEnv*e,jobject,jlong h){return e->NewStringUTF(reinterpret_cast<Engine*>(h)->enumerateDrives().c_str());}
+extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeEnqueueInput(JNIEnv*,jobject,jlong h,jbyte v){reinterpret_cast<Engine*>(h)->enqueueInput(v);}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeHasPendingConsoleInput(JNIEnv*,jobject,jlong h){return reinterpret_cast<Engine*>(h)->hasPendingInput();}
+extern "C" JNIEXPORT jbyteArray JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDrainConsole(JNIEnv*e,jobject,jlong h){return bytes(e,reinterpret_cast<Engine*>(h)->drainConsole());}
+extern "C" JNIEXPORT jbyteArray JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDrainPrinter(JNIEnv*e,jobject,jlong h){return bytes(e,reinterpret_cast<Engine*>(h)->drainPrinter());}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeBootRk05(JNIEnv*,jobject,jlong,jint){return false;} extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeMountRl(JNIEnv*,jobject,jlong,jint,jint){return false;} extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDismountRl(JNIEnv*,jobject,jlong,jint){return false;} extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeBootRl(JNIEnv*,jobject,jlong,jint){return false;} extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeMountDu0(JNIEnv*,jobject,jlong,jint){return false;} extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeBootDu0(JNIEnv*,jobject,jlong){return false;}

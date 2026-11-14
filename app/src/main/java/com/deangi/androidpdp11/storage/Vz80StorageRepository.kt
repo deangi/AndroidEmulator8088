@@ -513,7 +513,7 @@ class Vz80StorageRepository(private val context: Context) {
 
     private fun scan(directory: DocumentFile): Vz80StorageSnapshot {
         val files = directory.listFiles().filter { it.isFile }
-        val profiles = files.filter { it.name?.lowercase()?.let { name -> name == "pdpconfig.ini" || name.startsWith("pdpconfig-") && name.endsWith(".ini") } == true }
+        val profiles = files.filter { it.name?.lowercase()?.let { name -> name == "v8088config.ini" || name.startsWith("v8088config-") && name.endsWith(".ini") } == true }
             .map(::parseProfile).sortedBy { it.fileName.lowercase() }
         val images = files.mapNotNull { it.name }.filter { it.endsWith(".dsk", true) || it.endsWith(".hdd", true) }.sortedBy(String::lowercase)
         val telnetPort = files.firstOrNull { it.name.equals("wificonfig.ini", ignoreCase = true) }
@@ -549,7 +549,7 @@ class Vz80StorageRepository(private val context: Context) {
         val emulatorParameters = values.filterKeys { it.startsWith("diag.") || it.startsWith("ethernet.") }
             .mapKeys { (key, _) -> if (key.startsWith("ethernet.")) "eth_${key.removePrefix("ethernet.")}" else key.removePrefix("diag.") }
         return Vz80Profile(
-            fileName = file.name ?: "pdpconfig.ini",
+            fileName = file.name ?: "v8088config.ini",
             title = values["system.title"] ?: file.name.orEmpty(),
             terminal = values["console.terminal"] ?: "vt100",
             bootDrive = values["disks.boot"]?.uppercase() ?: "RK0",
@@ -579,7 +579,7 @@ class Vz80StorageRepository(private val context: Context) {
 
     private fun isConfigFile(name: String): Boolean {
         val lower = name.lowercase()
-        return (lower == "pdpconfig.ini" || lower.startsWith("pdpconfig-") ||
+        return (lower == "v8088config.ini" || lower.startsWith("v8088config-") ||
             lower == "wificonfig.ini" || lower.startsWith("wificonfig-")) && lower.endsWith(".ini")
     }
 
@@ -587,6 +587,6 @@ class Vz80StorageRepository(private val context: Context) {
         const val MAX_FLOPPY_IMAGE_BYTES = 16 * 1024 * 1024
         const val MAX_CPM_FILE_BYTES = 241 * 1024
         const val TREE_URI_KEY = "tree_uri"
-        const val VZ80_DIRECTORY = "vPDP11"
+        const val VZ80_DIRECTORY = "v8088"
     }
 }

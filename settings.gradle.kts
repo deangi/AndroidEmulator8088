@@ -17,5 +17,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AndroidEmulatorPdp11"
+rootProject.name = "AndroidEmulator8088"
 include(":app")
