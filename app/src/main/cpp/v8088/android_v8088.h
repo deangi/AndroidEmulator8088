@@ -29,9 +29,6 @@ public:
     bool mountDrive(const std::string& name, int descriptor);
     bool dismountDrive(const std::string& name);
     std::string enumerateDrives() const;
-    std::string diagnostics() const;
-    void requestDiagnostics() {}
-    std::string takeDiagnostics() { return {}; }
     void enqueueInput(uint8_t value);
     bool hasPendingInput() const;
     std::vector<uint8_t> drainConsole();

@@ -63,9 +63,6 @@ public:
     bool mountDrive(const std::string& name, int descriptor);
     bool dismountDrive(const std::string& name);
     std::string enumerateDrives();
-    std::string diagnostics();
-    void requestDiagnostics() { diagnosticsRequested.store(true); }
-    std::string takeDiagnostics();
     void enqueueInput(uint8_t value);
     bool hasPendingInput();
     std::vector<uint8_t> drainConsole();
@@ -81,9 +78,6 @@ private:
     bool kwpEnabled { false };
     uint32_t kw11InstructionTicks { 0 };
     std::atomic<uint16_t> lastPc { 0 };
-    std::atomic<bool> diagnosticsRequested { false };
-    std::mutex diagnosticsLock;
-    std::string pendingDiagnostics;
     std::unique_ptr<disk_backend> du0Media;
     void serviceTimedDevices(uint32_t elapsedInstructions);
     bus machine;

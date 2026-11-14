@@ -196,11 +196,6 @@ uint64_t Engine::runInstructions(const uint64_t count)
                 if (auto* uda = machine.getUDA50(); uda && uda->needs_deferred_service())
                     uda->service_deferred();
             }
-            if (diagnosticsRequested.exchange(false)) {
-                const auto snapshot = diagnostics();
-                std::lock_guard<std::mutex> lock(diagnosticsLock);
-                pendingDiagnostics = snapshot;
-            }
         }
         scheduler.deliverDue(scheduler.now());
         if (executed > 0)
@@ -482,72 +477,6 @@ std::string Engine::enumerateDrives()
     out << "DU0 UDA50-MSCP range=102400..4294966784 alignment=512 state=" << (du0Media ? "mounted" : "empty") << "\r\n";
     out << "RP0 RH11-RP range=102400..268435456 alignment=512 state=" << (machine.getRP06() ? "mounted" : "empty") << "\r\n";
     return out.str();
-}
-
-std::string Engine::diagnostics()
-{
-    auto* cpu = machine.getCpu();
-    std::ostringstream out;
-    out << std::oct << std::setfill('0');
-    out << "PDP-11 diagnostics\r\n";
-    out << "CPU PC=" << std::setw(6) << cpu->getPC()
-        << " PSW=" << std::setw(6) << cpu->getPSW()
-        << " IPL=" << std::dec << cpu->getPSW_spl()
-        << " WAIT=" << (cpu->is_waiting() ? "yes" : "no") << "\r\n";
-    out << std::oct << "R0-R5";
-    for (int r = 0; r < 6; ++r) out << " " << std::setw(6) << cpu->get_register(r);
-    out << "\r\nIRQ";
-    const auto queued = cpu->get_queued_interrupts();
-    for (int level = 1; level < 8; ++level)
-        for (const auto vector : queued[level]) out << " BR" << std::dec << level << ":" << std::oct << std::setw(3) << vector;
-    out << "\r\n";
-    if (auto* tty = machine.getTty())
-        out << "KL11 TKS=" << std::setw(6) << tty->read_word(PDP11TTY_TKS)
-            << " TPS=" << std::setw(6) << tty->read_word(PDP11TTY_TPS) << "\r\n";
-    if (auto* kw11 = machine.getKW11_L()) {
-        uint16_t csr = 0;
-        uint64_t ticks = 0, enabled = 0, interrupts = 0;
-        kw11->diagnostic_state(&csr, &ticks, &enabled, &interrupts);
-        out << "KW11-L CSR=" << std::setw(6) << csr
-            << std::dec << " ticks=" << ticks
-            << " enabled=" << enabled << " interrupts=" << interrupts << "\r\n";
-    }
-    bool kwpPresent = false, kwpIrq = false;
-    uint16_t kwpCsr = 0, kwpCsb = 0, kwpCounter = 0;
-    uint64_t kwpLast = 0;
-    uint32_t kwpRemainder = 0;
-    kek_kwp::diagnostic_state(&kwpPresent, &kwpCsr, &kwpCsb, &kwpCounter,
-        &kwpIrq, &kwpLast, &kwpRemainder);
-    out << std::oct << "KW11-P enabled=" << (kwpPresent ? "yes" : "no")
-        << " CSR=" << std::setw(6) << kwpCsr
-        << " CSB=" << std::setw(6) << kwpCsb
-        << " CNTR=" << std::setw(6) << kwpCounter
-        << std::dec << " irq=" << (kwpIrq ? "yes" : "no")
-        << " last=" << kwpLast << " remainder=" << kwpRemainder << "\r\n";
-    if (auto* uda = machine.getUDA50()) {
-        out << std::oct << "UDA50 state=" << udaStateName(uda->get_state())
-            << " SA=" << std::setw(6) << uda->get_sa()
-            << " vector=" << std::setw(6) << uda->get_interrupt_vector()
-            << " comm=" << std::setw(8) << uda->get_communication_address()
-            << std::dec << " cmd-ring=" << uda->get_command_ring_length()
-            << " rsp-ring=" << uda->get_response_ring_length()
-            << " active=" << (uda->needs_deferred_service() ? "yes" : "no") << "\r\n";
-    }
-    out << std::dec << "Scheduler now=" << scheduler.now() << " next=";
-    const auto next = scheduler.nextDue();
-    if (next == UINT64_MAX) out << "none"; else out << next;
-    out << " stop=" << scheduler.activeStop() << "\r\n";
-    if (machine.getRK05()) out << "RK05 attached\r\n";
-    if (machine.getRL02()) out << "RL11 attached\r\n";
-    return out.str();
-}
-
-std::string Engine::takeDiagnostics()
-{
-    std::lock_guard<std::mutex> lock(diagnosticsLock);
-    auto result = pendingDiagnostics;
-    pendingDiagnostics.clear();
-    return result;
 }
 
 std::vector<uint8_t> Engine::drainPrinter() { return kek_lp11::drain_output(); }

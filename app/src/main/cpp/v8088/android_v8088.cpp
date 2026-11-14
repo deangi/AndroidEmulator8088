@@ -94,7 +94,6 @@ std::string Engine::enumerateDrives() const {
     }
     return out.str();
 }
-std::string Engine::diagnostics() const { std::ostringstream out; out<<"8088 diagnostics\r\nIP="<<std::hex<<v8088_get_ip()<<" CS="<<v8088_get_reg16(V8088_CS)<<" instructions="<<std::dec<<executed<<"\r\n"; return out.str(); }
 void Engine::enqueueInput(uint8_t value) { std::lock_guard<std::mutex> g(lock); input.push_back(value); }
 bool Engine::hasPendingInput() const { std::lock_guard<std::mutex> g(lock); return !input.empty(); }
 std::vector<uint8_t> Engine::drainConsole() { std::lock_guard<std::mutex> g(lock); std::vector<uint8_t> r(output.begin(),output.end());output.clear();return r; }

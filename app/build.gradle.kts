@@ -4,7 +4,7 @@ plugins {
 }
 
 // Phase 1 starts at 0.1.0; increment the patch version for every Phase 1 build.
-val appVersion = "0.2.3"
+val appVersion = "0.2.4"
 val buildDateUtc = "2026-11-13"
 
 android {
@@ -15,7 +15,7 @@ android {
         applicationId = "com.deangi.android8088"
         minSdk = 26
         targetSdk = 35
-        versionCode = 203
+        versionCode = 204
         versionName = appVersion
 
         buildConfigField("String", "APP_VERSION", "\"$appVersion\"")

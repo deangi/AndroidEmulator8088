@@ -5,9 +5,6 @@ static jbyteArray bytes(JNIEnv* e,std::vector<uint8_t> v){auto a=e->NewByteArray
 extern "C" JNIEXPORT jlong JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeCreate(JNIEnv*,jobject){return (jlong)new Engine;}
 extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDestroy(JNIEnv*,jobject,jlong h){delete reinterpret_cast<Engine*>(h);}
 extern "C" JNIEXPORT jstring JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeProcessorId(JNIEnv*e,jobject,jlong h){return e->NewStringUTF(reinterpret_cast<Engine*>(h)->processorId());}
-extern "C" JNIEXPORT jstring JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDiagnostics(JNIEnv*e,jobject,jlong h){return e->NewStringUTF(reinterpret_cast<Engine*>(h)->diagnostics().c_str());}
-extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeRequestDiagnostics(JNIEnv*,jobject,jlong h){reinterpret_cast<Engine*>(h)->requestDiagnostics();}
-extern "C" JNIEXPORT jstring JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeTakeDiagnostics(JNIEnv*e,jobject,jlong h){return e->NewStringUTF(reinterpret_cast<Engine*>(h)->takeDiagnostics().c_str());}
 extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeReset(JNIEnv*,jobject,jlong h,jint p){reinterpret_cast<Engine*>(h)->reset(p);}
 extern "C" JNIEXPORT jboolean JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeConfig(JNIEnv*e,jobject,jlong h,jstring s){const char*x=e->GetStringUTFChars(s,0);bool ok=reinterpret_cast<Engine*>(h)->config(x?x:"");if(x)e->ReleaseStringUTFChars(s,x);return ok;}
 extern "C" JNIEXPORT void JNICALL Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeSetProgramCounter(JNIEnv*,jobject,jlong h,jint p){reinterpret_cast<Engine*>(h)->setProgramCounter(p);}

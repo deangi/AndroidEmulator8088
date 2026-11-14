@@ -42,14 +42,6 @@ class Vz80StorageRepository(private val context: Context) {
     private val recovery = CpmRecoveryStore(java.io.File(context.filesDir, "cpm-recovery"))
     fun printerCapture(): PrinterCapture = PrinterCapture(context.contentResolver, ::vz80Directory)
 
-    fun appendDiagnostics(text: String) = synchronized(mediaLock) {
-        val root = requireNotNull(vz80Directory()) { EmulatorIdentity.storageUnavailable() }
-        val file = root.findFile("diagnostics.log") ?: root.createFile("text/plain", "diagnostics.log")
-            ?: error("Could not create diagnostics.log")
-        requireNotNull(context.contentResolver.openOutputStream(file.uri, "wa")) { "Could not write diagnostics.log" }
-            .bufferedWriter().use { writer -> writer.appendLine("--- ${java.time.Instant.now()} ---").append(text).appendLine() }
-    }
-
     fun resolveDiskImage(name: String): String {
         ShellFileNames.validate(name)
         val root = requireNotNull(vz80Directory()) { "vZ80 storage is unavailable" }

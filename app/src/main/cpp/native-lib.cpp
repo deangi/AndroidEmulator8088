@@ -107,22 +107,6 @@ Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeProcessorId(JNIEnv* env, jobj
     return env->NewStringUTF(reinterpret_cast<pdp11android::Engine*>(handle)->processorId());
 }
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeDiagnostics(JNIEnv* env, jobject, jlong handle) {
-    const auto value = reinterpret_cast<pdp11android::Engine*>(handle)->diagnostics();
-    return env->NewStringUTF(value.c_str());
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeRequestDiagnostics(JNIEnv*, jobject, jlong handle) {
-    reinterpret_cast<pdp11android::Engine*>(handle)->requestDiagnostics();
-}
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeTakeDiagnostics(JNIEnv* env, jobject, jlong handle) {
-    const auto value = reinterpret_cast<pdp11android::Engine*>(handle)->takeDiagnostics();
-    return env->NewStringUTF(value.c_str());
-}
-
 extern "C" JNIEXPORT void JNICALL
 Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeReset(JNIEnv*, jobject, jlong handle, jint pc) {
     reinterpret_cast<pdp11android::Engine*>(handle)->reset(static_cast<uint16_t>(pc));

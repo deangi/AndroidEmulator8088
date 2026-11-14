@@ -449,7 +449,7 @@ void v8088_reset(void)
 
 void v8088_set_boot_drive(unsigned char dl) { regs8[REG_DL] = dl; }
 
-// Direct register access for diagnostics.
+// Direct register access for host integration.
 unsigned short v8088_get_reg16(int idx) { return regs16[idx]; }
 unsigned short v8088_get_ip(void)       { return reg_ip; }
 unsigned int   v8088_get_inst_count(void) { return inst_counter; }

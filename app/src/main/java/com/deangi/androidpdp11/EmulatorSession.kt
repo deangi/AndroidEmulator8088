@@ -29,7 +29,6 @@ class EmulatorSession(context: Context) : AutoCloseable {
     val selectedProfile = mutableStateOf(snapshot.value?.profiles?.firstOrNull())
     val diskError = mutableStateOf("")
     val systemInfoVersion = mutableIntStateOf(0)
-    val latestDiagnostics = mutableStateOf("")
     val printerError = mutableStateOf("")
     val printerFile = mutableStateOf<String?>(null)
     val printerPending = mutableStateOf<ByteArray?>(null)
@@ -156,7 +155,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
             // 16 bits, therefore each KW is 2048 addressable bytes.
             profile.memorySizeKw?.let { pdp11Core.memorySizeBytes = it * 2048 }
             profile.emulatorParameters.forEach { (name, value) ->
-                // Unsupported profile diagnostics are retained for forward
+                // Unsupported profile assignments are retained for forward
                 // compatibility; native cores selectively consume assignments.
                 pdp11Core.config("$name=$value")
             }
@@ -172,28 +171,6 @@ class EmulatorSession(context: Context) : AutoCloseable {
         emulatorRunning.value = true
     }
 
-    fun captureDiagnostics() {
-        latestDiagnostics.value = "Diagnostics requested..."
-        pdp11Core.requestDiagnostics()
-        scope.launch {
-            while (isActive) {
-                delay(50)
-                val text = pdp11Core.takeDiagnostics()
-                if (text.isNotEmpty()) {
-                    // Use the common console router so a diagnostic button
-                    // request is visible and copyable from Telnet as well as
-                    // the local terminal/status panel.
-                    console.publishOutput(("\r\n" + text + "\r\n").encodeToByteArray())
-                    latestDiagnostics.value = withContext(Dispatchers.IO) {
-                        runCatching { storage.appendDiagnostics(text) }
-                            .fold(onSuccess = { text }, onFailure = { "$text\r\nLog write failed: ${it.message}" })
-                    }
-                    return@launch
-                }
-            }
-        }
-    }
-
     private fun shellCommand(input: String): String {
         val parts = input.trim().split(Regex("\\s+"), limit = 2)
         return when (parts.firstOrNull()?.lowercase().orEmpty()) {
@@ -202,7 +179,6 @@ class EmulatorSession(context: Context) : AutoCloseable {
             "status" -> runBlocking(Dispatchers.Main.immediate) {
                 "${AppBuildInfo.displayName}\r\nEmulator: ${if (emulatorRunning.value) "running" else "stopped"}\r\nProfile: ${bootedProfile.value?.fileName ?: selectedProfile.value?.fileName ?: "none"}\r\n"
             }
-            "diagnostics", "diag" -> pdp11Core.diagnostics()
             "drives" -> runBlocking(Dispatchers.Main.immediate) {
                 val configured = bootedProfile.value?.drives.orEmpty()
                 pdp11Core.enumerateDrives().lineSequence().filter { it.isNotBlank() }.joinToString("\r\n", postfix = "\r\n") { line ->
