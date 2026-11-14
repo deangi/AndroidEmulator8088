@@ -28,7 +28,7 @@ class EmulatorService : Service() {
         val stop = PendingIntent.getService(this, 1, Intent(this, EmulatorService::class.java).setAction(ACTION_STOP), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("AndroidEmulatorPdp11 is running")
+            .setContentTitle("AndroidEmulator8088 is running")
             .setContentText("Emulator and telnet session active")
             .setContentIntent(open)
             .setOngoing(true)

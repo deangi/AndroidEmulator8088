@@ -322,7 +322,13 @@ class Vz80StorageRepository(private val context: Context) {
     }
 
     fun mountPdpDrive(drive: String, imageName: String, emulator: Pdp11NativeCore) = synchronized(mediaLock) {
-        val image = requireNotNull(vz80Directory()?.findFile(imageName)) { "Disk image not found: $imageName" }
+        val root = requireNotNull(vz80Directory()) { "v8088 storage is unavailable" }
+        // SAF providers commonly preserve case but do not promise a
+        // case-insensitive findFile().  DOS profile filenames are naturally
+        // case-insensitive, so resolve them that way here.
+        val image = root.findFile(imageName)
+            ?: root.listFiles().singleOrNull { it.isFile && it.name.equals(imageName, ignoreCase = true) }
+            ?: error("Disk image not found: $imageName")
         requireNotNull(context.contentResolver.openFileDescriptor(image.uri, "rw")).use { check(emulator.mountDrive(drive, it.fd)) { "Engine rejected $drive image $imageName" } }
     }
     fun dismountPdpDrive(drive: String, emulator: Pdp11NativeCore) = synchronized(mediaLock) { check(emulator.dismountDrive(drive)) { "Engine rejected drive $drive" } }

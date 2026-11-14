@@ -133,8 +133,8 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
-            Text("AndroidEmulatorPdp11", color = Color(0xFF55FF8A), style = MaterialTheme.typography.headlineMedium)
-            Text("PDP-11/70 console", color = Color(0xFFB4C8BA), modifier = Modifier.padding(top = 6.dp))
+            Text("AndroidEmulator8088", color = Color(0xFF55FF8A), style = MaterialTheme.typography.headlineMedium)
+            Text("Intel 8088 console", color = Color(0xFFB4C8BA), modifier = Modifier.padding(top = 6.dp))
 
             TerminalDisplay(
                 terminal = terminal,
@@ -543,7 +543,7 @@ private fun StatusArea(
             else -> "starting"
         }
         val lines = buildList {
-            add("AndroidEmulatorPdp11 status")
+            add("AndroidEmulator8088 status")
             add(AppBuildInfo.displayName)
             add("")
             add("Emulator: " + if (emulatorRunning) "running" else "stopped")
@@ -564,7 +564,7 @@ private fun StatusArea(
                 add("  Telnet endpoint: ${LocalNetworkInfo.ipv4Address()}:$port")
             }
             add("")
-            add("PDP-11 configured drives:")
+            add("8088 configured drives:")
             val drives = bootedProfile?.drives?.toSortedMap().orEmpty()
             if (drives.isEmpty()) add("  (none)")
             else drives.forEach { (drive, image) -> add("  $drive: $image") }
