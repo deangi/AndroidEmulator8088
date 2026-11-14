@@ -104,6 +104,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
     var printerPreview by remember { mutableStateOf<Pair<String, String>?>(null) }
     var profileSelectorOpen by remember { mutableStateOf(false) }
     var drivesOpen by remember { mutableStateOf(false) }
+    var engineDrives by remember { mutableStateOf(emptyList<String>()) }
     var configEditorOpen by remember { mutableStateOf(false) }
     var configLoading by remember { mutableStateOf(false) }
     var configDocuments by remember { mutableStateOf(emptyList<Vz80ConfigDocument>()) }
@@ -186,7 +187,11 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                     profileSelectorOpen = true
                 },
                 canManageDrives = bootedProfile != null && emulatorRunning,
-                onManageDrives = { snapshot = storage.snapshot(); drivesOpen = true },
+                onManageDrives = {
+                    snapshot = storage.snapshot()
+                    engineDrives = session.enumerateEngineDrives()
+                    drivesOpen = true
+                },
                 onPrinter = {
                     printerDialogOpen = true
                     scope.launch {
@@ -252,6 +257,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
     if (drivesOpen && bootedProfile != null) {
         DriveManagementDialog(
             profile = bootedProfile!!,
+            engineDrives = engineDrives,
             images = snapshot?.diskImages.orEmpty(),
             onDismiss = { drivesOpen = false },
             onApply = { profile ->
@@ -352,6 +358,7 @@ private fun PrinterDialog(
 @Composable
 private fun DriveManagementDialog(
     profile: Vz80Profile,
+    engineDrives: List<String>,
     images: List<String>,
     onDismiss: () -> Unit,
     onApply: (Vz80Profile) -> Unit,
@@ -361,13 +368,18 @@ private fun DriveManagementDialog(
     val duplicates = assignments.values.groupingBy { it.trimStart('/').lowercase() }.eachCount().any { it.value > 1 }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Mounted drives") },
+        title = { Text("${EmulatorIdentity.emulatorName} drives") },
         text = {
             Column {
                 Text("Close files on affected drives before changing disks. Changes last for this session; the configuration file is not changed.")
-                (listOf("RK0", "RK1", "RL0", "RL1", "RL2", "RL3", "DU0", "RP0", "RP1") + assignments.keys).distinct().forEach { drive ->
+                val engineByDrive = engineDrives.associateBy { it.substringBefore(' ').uppercase() }
+                val drives = engineByDrive.keys.filter { it in setOf("A", "B", "C", "D") }
+                    .ifEmpty { listOf("A", "B", "C", "D") }
+                drives.forEach { drive ->
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Text("$drive: ${assignments[drive] ?: "(empty)"}", modifier = Modifier.weight(1f))
+                        val model = engineByDrive[drive] ?: "$drive 8088 state=unknown"
+                        val file = assignments[drive] ?: "(empty)"
+                        Text("$model\nfile=$file", modifier = Modifier.weight(1f))
                         TextButton(onClick = { choosingDrive = drive }) { Text("Change") }
                     }
                 }

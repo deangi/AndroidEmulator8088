@@ -42,6 +42,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
     val terminal = Adm3aTerminal(rows = 25, personality = TerminalPersonality.VT100)
     val printerCapture = storage.printerCapture()
     private val pdp11Core = Pdp11NativeCore()
+    fun enumerateEngineDrives(): List<String> = pdp11Core.enumerateDrives().lineSequence().filter { it.isNotBlank() }.toList()
     @Volatile private var activeConsoleCore: ConsoleExecutionCore = pdp11Core
     val telnet = TelnetConsoleServer()
     val inputQueues = ConsoleInputQueues()
