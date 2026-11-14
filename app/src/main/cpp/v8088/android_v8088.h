@@ -49,6 +49,8 @@ private:
     std::deque<uint8_t> input, output, printer;
     mutable std::mutex lock;
     uint64_t executed { 0 };
+    bool smokeTest { false };
+    void installConsoleSmokeTest();
     static Engine* current;
     static int driveIndex(const std::string& name);
 };

@@ -138,6 +138,17 @@ class EmulatorSession(context: Context) : AutoCloseable {
         terminal.reset()
         activeConsoleCore = pdp11Core
         withContext(Dispatchers.IO) {
+            // Phase 1 8088 smoke profile: mount A: through D: using the same
+            // descriptor-based boundary, then run the tiny guest echo loop.
+            // Its output is published by ConsoleIoRouter to both the Android
+            // terminal and every connected Telnet client.
+            if (profile.bootDrive.trim().uppercase() in setOf("A", "B", "C", "D")) {
+                pdp11Core.clearProfileDevices()
+                profile.drives.forEach { (drive, image) ->
+                    storage.mountPdpDrive(drive, image.trimStart('/'), pdp11Core)
+                }
+                check(pdp11Core.config("smoke_test=true")) { "Could not enable 8088 console smoke test" }
+            } else {
             // vpdp1170 defines mem_size_kw in 1024-word units; PDP-11 words are
             // 16 bits, therefore each KW is 2048 addressable bytes.
             profile.memorySizeKw?.let { pdp11Core.memorySizeBytes = it * 2048 }
@@ -149,6 +160,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
             // DocumentFile lookups and disk-image attachment may block on the
             // Android document provider for seconds on a large media tree.
             storage.bootPdp11(profile, pdp11Core)
+            }
         }
         diskError.value = ""
         bootedProfile.value = profile

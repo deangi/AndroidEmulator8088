@@ -10,7 +10,7 @@ rule.  Version **1.0.0** is reserved for the first end-user-usable release.
 
 - **0.1.0:** Project identity, Android native build, `8086tiny` CPU/BIOS
   import, console boundary, and original launcher icon.
-- **0.1.1:** Complete Android host hooks for keyboard, console, timing, and
+- **0.1.1 (in progress):** Complete Android host hooks for keyboard, console, timing, and
   diagnostic reporting; add native unit tests for reset and instruction runs.
   Add a small 8088 smoke-test program that prints `Hello from 8088\n` to both
   the on-device console and Telnet, then continuously reads input characters
