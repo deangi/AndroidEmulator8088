@@ -42,6 +42,10 @@ public:
     int diskRead(int slot, uint32_t lba, void* target, uint32_t bytes);
     int diskWrite(int slot, uint32_t lba, const void* source, uint32_t bytes);
     uint32_t diskSectors(int slot) const;
+    int biosDiskRead(uint8_t biosDrive, uint32_t lba, void* target, uint32_t bytes);
+    int biosDiskWrite(uint8_t biosDrive, uint32_t lba, const void* source, uint32_t bytes);
+    uint8_t mountedBiosDrives(bool hardDisks) const;
+    bool biosDriveMounted(uint8_t biosDrive) const;
     void putchar(uint8_t value);
     int keyboard(uint8_t* value);
 private:
@@ -56,5 +60,6 @@ private:
     static Engine* current;
     static int driveIndex(const std::string& name);
     static int hostDiskIndex(int slot);
+    static int biosDriveIndex(uint8_t biosDrive);
 };
 } // namespace v8088android
