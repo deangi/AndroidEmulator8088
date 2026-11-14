@@ -8,10 +8,10 @@ RT-11 V5.4F on an RK05 (`RK0`) disk.
 Phase 3 is in progress. This repository is an independently named Android
 Studio project created from the Android VZ80 host framework. Its Android
 terminal, foreground-service, Telnet, and document-storage scaffolding are
-being retained; the inherited Z80 CPU and CP/M-specific disk implementation
-are temporary and will be replaced in the PDP-11 engine phases.
+being retained. PDP-11 execution, console, disk-controller, line-printer,
+and Telnet drive paths are native PDP-11 implementations.
 
-The current Phase 3 build is `0.3.35` (version code 335), dated 2026-11-13.
+The current initial working build is `1.0.0` (version code 1000), dated 2026-11-13.
 Phase numbers use the minor version (`0.1.x`, `0.2.x`, and so on); patch
 numbers advance for each build within a phase. Version `1.0.0` is reserved
 for a near-working prototype.
@@ -28,6 +28,15 @@ The following supplied profiles now complete their initial boot sequence:
 
 RSX-11M+ V4.6 required UDA50/MSCP deferred servicing at the same
 16-instruction active-device cadence used by the ESP32 reference engine.
+
+The current worktree additionally contains the next Phase 3 work in progress:
+
+- An epoch-safe native PC snapshot, displayed in System Info as an octal
+  front-panel PC value.
+- PDP-11 Drives dialog gating and engine-backed mount/dismount routing.
+- Initial RH11/RP06 `RP0` descriptor-media attachment support.
+- Parsing of `[ethernet]` profile parameters for the forthcoming DEUNA/NAT
+  bridge. The DEUNA device and Android NAT transport are not implemented yet.
 
 ## First supported configuration
 
@@ -87,14 +96,15 @@ requires the older ADM-3A parser.
   passes `0` and selects the type's default geometry.
 - [x] Diagnose and fix boot failures for RSX-11M+ 4.6, UNIX V6, UNIX V7,
   RSTS-7, and RSTS-9.3 profiles.
-- [ ] Retrofit the Z80 Telnet-shell drive commands to call the engine-hosted
+- [x] Retrofit the Z80 Telnet-shell drive commands to call the engine-hosted
   `DrivePort` interface exclusively, hiding CP/M/Z80 media details inside the
   Z80 engine adapter as the PDP-11 path now does.
 - [x] Implement `[console] boot_script` for Android profiles: wait for the
   configured console prompts and inject each corresponding response, matching
   the ESP32 profile behavior. Keep `boot_input` as the immediate typeahead
   mechanism.
-- [ ] Add front-panel support and additional PDP-11 disk controllers.
+- [ ] Complete front-panel controls (PC display is implemented) and validate
+  additional PDP-11 disk controllers (initial RP0 attachment is in progress).
 - [ ] Port the ESP32 Wi-Fi network bridge: expose a guest DEUNA Ethernet
   interface and bridge/NAT it through Android's active Wi-Fi network, with
   profile-configured MAC, guest address, netmask, and gateway.

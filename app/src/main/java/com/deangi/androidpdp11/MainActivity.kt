@@ -186,7 +186,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                 onBoot = {
                     profileSelectorOpen = true
                 },
-                canManageDrives = false,
+                canManageDrives = bootedProfile != null && emulatorRunning,
                 onManageDrives = { snapshot = storage.snapshot(); drivesOpen = true },
                 onPrinter = {
                     printerDialogOpen = true
@@ -215,7 +215,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                 },
             )
 
-            StatusArea(snapshot, selectedProfile, emulatorRunning, bootedProfile, telnetRequested, telnetStatus, diskError, systemInfoVersion, printerFile, printerError, latestDiagnostics)
+            StatusArea(snapshot, selectedProfile, emulatorRunning, bootedProfile, telnetRequested, telnetStatus, diskError, systemInfoVersion, printerFile, printerError, latestDiagnostics, session.frontPanelPc())
         }
     }
     if (printerDialogOpen) {
@@ -257,7 +257,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
             onDismiss = { drivesOpen = false },
             onApply = { profile ->
                 drivesOpen = false
-                runCatching { storage.replaceMountedDisks(profile, emulator) }
+                runCatching { session.replacePdpDrives(profile) }
                     .onSuccess {
                         diskError = ""
                         bootedProfile = profile
@@ -365,8 +365,8 @@ private fun DriveManagementDialog(
         title = { Text("Mounted drives") },
         text = {
             Column {
-                Text("Close files on affected drives before changing disks. At the CP/M prompt, press Ctrl-C after changing disks. Changes last for this session; the configuration file is not changed.")
-                listOf("A", "B", "C", "D").forEach { drive ->
+                Text("Close files on affected drives before changing disks. Changes last for this session; the configuration file is not changed.")
+                (listOf("RK0", "RK1", "RL0", "RL1", "RL2", "RL3", "DU0", "RP0", "RP1") + assignments.keys).distinct().forEach { drive ->
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                         Text("$drive: ${assignments[drive] ?: "(empty)"}", modifier = Modifier.weight(1f))
                         TextButton(onClick = { choosingDrive = drive }) { Text("Change") }
@@ -533,6 +533,7 @@ private fun StatusArea(
     printerFile: String?,
     printerError: String,
     latestDiagnostics: String,
+    frontPanelPc: Int,
 ) {
     val status = remember(snapshot, selectedProfile, bootedProfile, emulatorRunning, telnetRequested, telnetStatus, diskError, systemInfoVersion, printerFile, printerError, latestDiagnostics) {
         val telnet = when {
@@ -560,6 +561,7 @@ private fun StatusArea(
                 add("  ${AppBuildInfo.displayName}")
                 add("  Boot profile: ${profile?.let { "${it.fileName} (${it.title})" } ?: "not selected"}")
                 profile?.memorySizeKw?.let { kw -> add("  Memory: $kw KW (${kw * 2} KiB)") }
+                add("  Front panel PC: ${frontPanelPc.toString(8).padStart(6, '0')}")
                 add("  Telnet endpoint: ${LocalNetworkInfo.ipv4Address()}:$port")
             }
             add("")

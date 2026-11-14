@@ -141,6 +141,11 @@ Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeSetProgramCounter(JNIEnv*, jo
     reinterpret_cast<pdp11android::Engine*>(handle)->setProgramCounter(static_cast<uint16_t>(pc));
 }
 
+extern "C" JNIEXPORT jint JNICALL
+Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeLastProgramCounter(JNIEnv*, jobject, jlong handle) {
+    return reinterpret_cast<pdp11android::Engine*>(handle)->lastProgramCounter();
+}
+
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_deangi_androidpdp11_Pdp11NativeCore_nativeRunInstructions(JNIEnv*, jobject, jlong handle, jlong count) {
     return static_cast<jlong>(reinterpret_cast<pdp11android::Engine*>(handle)->runInstructions(static_cast<uint64_t>(count)));

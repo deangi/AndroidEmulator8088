@@ -46,6 +46,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
     val telnet = TelnetConsoleServer()
     val inputQueues = ConsoleInputQueues()
     val bootInput = BootInputController(inputQueues::enqueueLocal)
+    fun frontPanelPc(): Int = pdp11Core.lastProgramCounter()
     val bootScript = BootScriptController(inputQueues::enqueueLocal)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val coordinator = EmulatorSliceCoordinator(
@@ -58,6 +59,20 @@ class EmulatorSession(context: Context) : AutoCloseable {
         localOutput = { terminal.feed(it); terminalVersion.intValue++ },
         telnetOutput = telnet::writeConsole,
     )
+
+    /** Apply the Drives dialog delta through the PDP-11 engine, never the inherited Z80 adapter. */
+    fun replacePdpDrives(profile: Vz80Profile) {
+        val previous = bootedProfile.value?.drives.orEmpty()
+        val names = previous.keys + profile.drives.keys
+        names.forEach { drive ->
+            val before = previous[drive]
+            val after = profile.drives[drive]
+            if (before == after) return@forEach
+            if (before != null) storage.dismountPdpDrive(drive, pdp11Core)
+            if (after != null) storage.mountPdpDrive(drive, after.trimStart('/'), pdp11Core)
+        }
+        bootedProfile.value = profile
+    }
 
     init {
         telnet.shellCommand = ::shellCommand

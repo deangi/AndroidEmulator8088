@@ -20,6 +20,8 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     fun reset(entryPc: Int = 0) = withHandle { nativeReset(it, entryPc) }
     override fun config(parameter: String): Boolean = withHandle { nativeConfig(it, parameter) }
     internal fun setProgramCounter(value: Int) = withHandle { nativeSetProgramCounter(it, value) }
+    /** PC sampled by the emulation thread after its most recent execution epoch. */
+    fun lastProgramCounter(): Int = withHandle { nativeLastProgramCounter(it) }
     override fun runInstructions(count: Long): Long = withHandle { nativeRunInstructions(it, count) }
     fun zeroMemory() = withHandle { nativeZeroMemory(it) }
     fun clearMemory(value: Byte = 0) = withHandle { nativeClearMemory(it, value) }
@@ -61,6 +63,7 @@ class Pdp11NativeCore : ConsoleExecutionCore {
     private external fun nativeReset(handle: Long, pc: Int)
     private external fun nativeConfig(handle: Long, parameter: String): Boolean
     private external fun nativeSetProgramCounter(handle: Long, pc: Int)
+    private external fun nativeLastProgramCounter(handle: Long): Int
     private external fun nativeRunInstructions(handle: Long, count: Long): Long
     private external fun nativeMemorySizeBytes(handle: Long): Int
     private external fun nativeSetMemorySizeBytes(handle: Long, bytes: Int)

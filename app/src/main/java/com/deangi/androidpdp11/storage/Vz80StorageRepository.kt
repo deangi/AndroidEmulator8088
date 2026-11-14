@@ -543,8 +543,11 @@ class Vz80StorageRepository(private val context: Context) {
             .mapKeys { (key, _) -> key.removePrefix("disks.").uppercase() }
             .filter { (_, value) -> value.isNotBlank() }
         val memorySizeKw = values["system.mem_size_kw"]?.toIntOrNull()?.takeIf { it in 32..2048 }
-        val emulatorParameters = values.filterKeys { it.startsWith("diag.") }
-            .mapKeys { (key, _) -> key.removePrefix("diag.") }
+        // PDP-11 engine-specific configuration is deliberately sectioned.
+        // Keep Ethernet settings intact for the DEUNA/NAT adapter rather than
+        // making the Android host infer guest addressing from its Wi-Fi LAN.
+        val emulatorParameters = values.filterKeys { it.startsWith("diag.") || it.startsWith("ethernet.") }
+            .mapKeys { (key, _) -> if (key.startsWith("ethernet.")) "eth_${key.removePrefix("ethernet.")}" else key.removePrefix("diag.") }
         return Vz80Profile(
             fileName = file.name ?: "pdpconfig.ini",
             title = values["system.title"] ?: file.name.orEmpty(),

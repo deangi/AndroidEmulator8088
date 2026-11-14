@@ -120,6 +120,7 @@ void Engine::reset(const uint16_t entryPc)
     kek_kwp::reset(scheduler.now());
     machine.getCpu()->reset();
     machine.getCpu()->setPC(entryPc);
+    lastPc.store(entryPc);
     // Mirrors the upstream debugger's stopped state.  runInstructions()
     // asserts it again when host execution resumes, enabling KW11-L ticks.
     *console.get_running_flag() = false;
@@ -128,6 +129,7 @@ void Engine::reset(const uint16_t entryPc)
 void Engine::setProgramCounter(const uint16_t entryPc)
 {
     machine.getCpu()->setPC(entryPc);
+    lastPc.store(entryPc);
 }
 
 bool Engine::config(const std::string& parameter)
@@ -205,6 +207,9 @@ uint64_t Engine::runInstructions(const uint64_t count)
             serviceTimedDevices(executed);
         remaining -= executed;
     }
+    // UI/front-panel consumers never dereference the CPU while it is running.
+    // Publish one coherent, low-cost PC sample per host execution epoch.
+    lastPc.store(machine.getCpu()->getPC());
     return machine.getCpu()->get_instructions_executed_count() - before;
 }
 
@@ -422,6 +427,21 @@ bool Engine::mountDrive(const std::string& rawName, const int descriptor)
     std::string name = rawName;
     std::transform(name.begin(), name.end(), name.begin(), ::toupper);
     if (name == "DU0" || name == "DUA0") return mountDu0(descriptor);
+    if (name == "RP0") {
+        if (descriptor < 0) return false;
+        auto image = std::make_unique<AndroidFdDiskBackend>(descriptor);
+        if (!image->begin(false)) return false;
+        auto* rp = machine.getRP06();
+        if (!rp) {
+            rp = new rp06(&machine, console.get_disk_read_activity_flag(), console.get_disk_write_activity_flag(), false);
+            rp->begin();
+            machine.add_RP06(rp);
+        }
+        auto* media = rp->access_disk_backends();
+        for (auto* backend : *media) delete backend;
+        media->clear(); media->push_back(image.release());
+        return true;
+    }
     if (name.size() == 3 && (name.rfind("RL", 0) == 0 || name.rfind("DL", 0) == 0) && name[2] >= '0' && name[2] <= '3')
         return mountRl(name[2] - '0', descriptor);
     return false;
@@ -436,6 +456,14 @@ bool Engine::dismountDrive(const std::string& rawName)
     if (name == "DU0" || name == "DUA0") {
         if (auto* controller = machine.getUDA50()) controller->attach_media(nullptr, nullptr, nullptr, nullptr);
         du0Media.reset();
+        return true;
+    }
+    if (name == "RP0") {
+        if (auto* rp = machine.getRP06()) {
+            auto* media = rp->access_disk_backends();
+            for (auto* backend : *media) delete backend;
+            media->clear();
+        }
         return true;
     }
     return false;

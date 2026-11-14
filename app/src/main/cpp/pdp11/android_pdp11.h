@@ -45,6 +45,8 @@ public:
     bool config(const std::string& parameter);
     void setProgramCounter(uint16_t entryPc);
     uint64_t runInstructions(uint64_t count);
+    /** PC sampled by the emulation thread at the end of each execution epoch. */
+    uint16_t lastProgramCounter() const { return lastPc.load(); }
     void setMemorySizeBytes(uint32_t bytes);
     uint32_t memorySizeBytes() const;
     void zeroMemory();
@@ -78,6 +80,7 @@ private:
     // device will consume this when its ESP32 implementation is ported.
     bool kwpEnabled { false };
     uint32_t kw11InstructionTicks { 0 };
+    std::atomic<uint16_t> lastPc { 0 };
     std::atomic<bool> diagnosticsRequested { false };
     std::mutex diagnosticsLock;
     std::string pendingDiagnostics;
