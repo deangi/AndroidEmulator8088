@@ -3,7 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-val appVersion = "1.0.0"
+// Phase 1 starts at 0.1.0; increment the patch version for every Phase 1 build.
+val appVersion = "0.1.0"
 val buildDateUtc = "2026-11-13"
 
 android {
@@ -14,7 +15,7 @@ android {
         applicationId = "com.deangi.android8088"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1000
+        versionCode = 100
         versionName = appVersion
 
         buildConfigField("String", "APP_VERSION", "\"$appVersion\"")
