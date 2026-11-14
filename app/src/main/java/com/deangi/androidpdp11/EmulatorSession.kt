@@ -38,7 +38,8 @@ class EmulatorSession(context: Context) : AutoCloseable {
     val telnetStatus = mutableStateOf(TelnetStatus())
     val stopping = mutableStateOf(false)
 
-    val terminal = Adm3aTerminal(rows = 25, personality = TerminalPersonality.VT100).apply { showCornerTestPattern() }
+    // Keep the pre-boot terminal blank; output must come from the host or guest.
+    val terminal = Adm3aTerminal(rows = 25, personality = TerminalPersonality.VT100)
     val printerCapture = storage.printerCapture()
     private val pdp11Core = Pdp11NativeCore()
     @Volatile private var activeConsoleCore: ConsoleExecutionCore = pdp11Core

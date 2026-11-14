@@ -24,9 +24,9 @@ rule.  Version **1.0.0** is reserved for the first end-user-usable release.
 
 ## Phase 2 — usable DOS workflow (0.2.x)
 
-- **0.2.0 (in progress):** Boot MS-DOS 3.31 from the supplied images and validate keyboard,
+- **0.2.0 (complete):** Boot MS-DOS 3.31 from the supplied images and validate keyboard,
   screen output, A:/C: access, and clean reset.
-- **0.2.1:** 80x25 PC text-mode renderer and proper DOS keyboard mappings.
+- **0.2.1 (in progress):** 80x25 PC text-mode renderer and proper DOS keyboard mappings.
 - **0.2.2:** Persist selected profile/media and provide image creation/import.
 - **0.2.3:** Printer capture, Telnet console parity, and performance tuning.
 

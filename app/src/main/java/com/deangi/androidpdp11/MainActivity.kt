@@ -178,7 +178,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                                 .onFailure { console.publishOutput("Boot failed: ${it.message}\r\n".encodeToByteArray()) }
                         }
                     } else {
-                        terminal.showCornerTestPattern()
+                        terminal.reset()
                         terminalVersion++
                     }
                 },
