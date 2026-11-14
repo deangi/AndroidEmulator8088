@@ -1,124 +1,37 @@
-# AndroidEmulatorPdp11
+# AndroidEmulator8088
 
-Android re-host of the `vpdp1170` DEC PDP-11/70 emulator, initially targeting
-RT-11 V5.4F on an RK05 (`RK0`) disk.
+Android Studio project for an Intel 8088 / MS-DOS emulator.  It retains the
+Android host patterns from AndroidEmulatorPdp11 while packaging the v8088
+firmware project's `8086tiny` CPU engine behind the same JNI console-core
+interface.
 
-## Status
+## Current phase
 
-Phase 3 is in progress. This repository is an independently named Android
-Studio project created from the Android VZ80 host framework. Its Android
-terminal, foreground-service, Telnet, and document-storage scaffolding are
-being retained. PDP-11 execution, console, disk-controller, line-printer,
-and Telnet drive paths are native PDP-11 implementations.
+Phase 1 starts at version **0.1.0**.  Each build in this phase increments the
+patch version (0.1.1, 0.1.2, …).  Phase 2 begins at 0.2.0.  Version 1.0.0 is
+reserved for the first usable end-user release.
 
-The current initial working build is `1.0.0` (version code 1000), dated 2026-11-13.
-Phase numbers use the minor version (`0.1.x`, `0.2.x`, and so on); patch
-numbers advance for each build within a phase. Version `1.0.0` is reserved
-for a near-working prototype.
+See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the staged plan and
+release gate.
 
-The PDP-11 target workspace is `vPDP11` under the document tree selected by
-the user. Disk images are deliberately not included in the repository or APK.
+## Storage
 
-The following supplied profiles now complete their initial boot sequence:
+The app uses the user-selected Android document-tree folder
+`Emulators/v8088`.  The supplied v8088 configuration and DOS disk images are
+not checked into this repository.  The standard profile is `v8088config.ini`,
+with A: through D: media entries and an A: boot drive.
 
-- RT-11 V5.4F and XXDP-25
-- RSTS V04B-17, RSTS/E V7, and RSTS/E V9.3
-- RSX-11M V4.0 and RSX-11M+ V4.6 PiDP
-- UNIX V6, UNIX V7, and 2.11BSD PiDP
+## Engine
 
-RSX-11M+ V4.6 required UDA50/MSCP deferred servicing at the same
-16-instruction active-device cadence used by the ESP32 reference engine.
-
-The current worktree additionally contains the next Phase 3 work in progress:
-
-- An epoch-safe native PC snapshot, displayed in System Info as an octal
-  front-panel PC value.
-- PDP-11 Drives dialog gating and engine-backed mount/dismount routing.
-- Initial RH11/RP06 `RP0` descriptor-media attachment support.
-- Parsing of `[ethernet]` profile parameters for the forthcoming DEUNA/NAT
-  bridge. The DEUNA device and Android NAT transport are not implemented yet.
-
-## First supported configuration
-
-The first end-to-end configuration will be:
-
-```ini
-[system]
-title = PDP-11 RT-11 V5.4F
-mem_size_kw = 124
-
-[disks]
-rk0 = /rt11-5.dsk
-boot = rk0
-```
-
-The corresponding user-provided files will live in `vPDP11`:
-
-```text
-vPDP11/
-  pdpconfig-rt11-5.ini
-  rt11-5.dsk
-  printer/
-```
-
-## Architecture
-
-The Android host will target a common `EmulatorCore` contract that exposes
-CPU identity, memory control, instruction slices, console I/O, drive mounting,
-line-printer output, and an optional front panel. Native PDP-11 code receives
-open Android file descriptors rather than host paths.
-
-The source engine is the vendored `kek` PDP-11/70 core used by the ESP32
-`vpdp1170` project. The initial Android device set is KL11 console, RK05,
-and the minimum clock/front-panel support necessary to boot RT-11.
-
-The PDP-11 console defaults to an 80×25 VT100 personality. Set
-`[console] terminal = adm3a` in a profile only when running software that
-requires the older ADM-3A parser.
-
-## Phase 3 task list
-
-- [x] Boot RT-11 from a selected RK05 disk image through an Android file descriptor.
-- [x] Boot RL01/RL02 profiles and configure their mounted units from `pdpconfig*.ini`.
-- [x] Boot UDA50/MSCP DU0 media, including the 2.11BSD PiDP configuration.
-- [x] Report PDP-11 drive names (such as `RK0` and `RL0`) in system status.
-- [x] Implement a PDP-11 LP11 line-printer device and connect it to Android
-  printer capture in `vPDP11/printer`. Implement LPS at `177514` (octal),
-  LPB at `177516` (octal), and interrupt vector `200` (octal), following the
-  [LP11 section of the 1976 PDP-11 Peripherals Handbook](https://bitsavers.trailing-edge.com/pdf/dec/pdp11/handbooks/PDP-11_PeripheralsHbk_1976.pdf).
-  This will implement the standard `EmulatorCore.linePrinter: LinePrinterPort?`
-  contract already shared by emulator engines, so printer bytes remain separate
-  from the console/Telnet stream.
-- [x] Add native PDP-11 drive mount/dismount and enumeration for Telnet using
-  engine-hosted device names. Finish the corresponding Android drive-management UI.
-- [x] Add Telnet-shell blank-image creation through `DrivePort.createBlankImage()`;
-  support `create <image-type> <file-name> [size-bytes]`, where an omitted size
-  passes `0` and selects the type's default geometry.
-- [x] Diagnose and fix boot failures for RSX-11M+ 4.6, UNIX V6, UNIX V7,
-  RSTS-7, and RSTS-9.3 profiles.
-- [x] Retrofit the Z80 Telnet-shell drive commands to call the engine-hosted
-  `DrivePort` interface exclusively, hiding CP/M/Z80 media details inside the
-  Z80 engine adapter as the PDP-11 path now does.
-- [x] Implement `[console] boot_script` for Android profiles: wait for the
-  configured console prompts and inject each corresponding response, matching
-  the ESP32 profile behavior. Keep `boot_input` as the immediate typeahead
-  mechanism.
-- [ ] Complete front-panel controls (PC display is implemented) and validate
-  additional PDP-11 disk controllers (initial RP0 attachment is in progress).
-- [ ] Port the ESP32 Wi-Fi network bridge: expose a guest DEUNA Ethernet
-  interface and bridge/NAT it through Android's active Wi-Fi network, with
-  profile-configured MAC, guest address, netmask, and gateway.
+The native layer vendors the v8088 project's `8086tiny.c` CPU core and BIOS
+blob.  Android-specific host hooks provide console input/output, timing, and
+descriptor-based disk I/O; ESP32 display, Wi-Fi, and PSRAM dependencies are
+not carried into the Android project.
 
 ## Build
 
-Open this directory in Android Studio, or run:
+Open the project in Android Studio or run:
 
 ```text
 ./gradlew :app:assembleDebug
 ```
-
-Phase 3 removes the temporary console diagnostic and begins the RT-11 boot
-path: selected `vPDP11` storage is parsed for `pdpconfig*.ini`, and the
-configured `rk0` disk is opened by descriptor and attached to the RK05
-controller. Drive editing, other PDP-11 controllers, and printer output are
-still staged work.
