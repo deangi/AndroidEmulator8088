@@ -36,8 +36,9 @@ rule.  Version **1.0.0** is reserved for the first end-user-usable release.
   image handling, user documentation, and regression testing against the
   supplied disk set.
 
-## Version 1.0.0 gate
+## Version 1.0.0 gate — achieved
 
-Release only when a user can install the APK, select `Emulators/v8088`, boot
-the supplied MS-DOS image, interact reliably, and preserve disk changes over
-an app restart without data loss.
+Version 1.0.0 is the first usable release. On-device verification confirms a
+user can install the APK, select `Emulators/v8088`, boot the supplied MS-DOS
+image, interact reliably, use distinct A: through D: drives, and preserve
+disk changes over an app restart without data loss.

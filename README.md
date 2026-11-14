@@ -7,7 +7,7 @@ interface.
 
 ## Current progress
 
-The project is in **Phase 2**, version **0.2.0**. Phase 1 established the
+The project has reached its first usable release, **version 1.0.0**. Phase 1 established the
 Android-native 8088 engine, launcher branding, profile parsing, safe
 descriptor-backed media mounting, and BIOS services for A: through D:.
 
@@ -19,17 +19,16 @@ Verified on-device:
 - `drives` reports mounted media through the native emulator model, including
   floppy and hard-disk image sizes.
 
-Phase 2 work remaining for the 0.2.0 milestone:
+Post-1.0 work:
 
 - Validate DOS keyboard input and on-device terminal output under normal use.
 - Validate a clean reset back to the selected boot profile without remounting
   or losing media changes.
 - Recheck Telnet console input/output against the local terminal.
 
-Next planned builds cover PC 80x25 rendering and DOS key mappings (0.2.1),
-profile/media persistence plus image import (0.2.2), and printer/Telnet
-parity and performance work (0.2.3). Version 1.0.0 remains reserved for the
-first end-user-usable release.
+Future builds will cover PC 80x25 rendering and DOS key mappings,
+profile/media persistence plus image import, and printer/Telnet parity and
+performance work.
 
 See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the staged plan and
 release gate.
