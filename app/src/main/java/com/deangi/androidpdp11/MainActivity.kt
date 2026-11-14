@@ -186,7 +186,10 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                 onBoot = {
                     profileSelectorOpen = true
                 },
-                canManageDrives = bootedProfile != null && emulatorRunning,
+                // Mounted media belongs to the booted engine profile. Do not
+                // also gate this on a duplicate UI running flag, which can
+                // briefly lag a successful 8088 boot and leave Drives grey.
+                canManageDrives = bootedProfile != null,
                 onManageDrives = {
                     snapshot = storage.snapshot()
                     engineDrives = session.enumerateEngineDrives()
