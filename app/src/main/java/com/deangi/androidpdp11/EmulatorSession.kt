@@ -40,7 +40,6 @@ class EmulatorSession(context: Context) : AutoCloseable {
 
     val terminal = Adm3aTerminal(rows = 25, personality = TerminalPersonality.VT100).apply { showCornerTestPattern() }
     val printerCapture = storage.printerCapture()
-    val emulator = NativeEmulator()
     private val pdp11Core = Pdp11NativeCore()
     @Volatile private var activeConsoleCore: ConsoleExecutionCore = pdp11Core
     val telnet = TelnetConsoleServer()
@@ -265,7 +264,6 @@ class EmulatorSession(context: Context) : AutoCloseable {
         scope.cancel()
         telnet.close()
         runCatching { printerCapture.close() }
-        emulator.close()
         pdp11Core.close()
     }
 }
