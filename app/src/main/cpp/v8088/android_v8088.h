@@ -61,5 +61,6 @@ private:
     static int driveIndex(const std::string& name);
     static int hostDiskIndex(int slot);
     static int biosDriveIndex(uint8_t biosDrive);
+    uint64_t mountedDriveBytes(int driveIndex) const;
 };
 } // namespace v8088android

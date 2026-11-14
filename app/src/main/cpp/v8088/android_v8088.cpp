@@ -80,10 +80,20 @@ void Engine::clearProfileDevices() { for (auto& fd:disks) { if(fd>=0) close(fd);
 int Engine::driveIndex(const std::string& raw) { std::string n=raw; std::transform(n.begin(),n.end(),n.begin(),::toupper); if(n.size()==1 && n[0]>='A'&&n[0]<='D') return n[0]-'A'; if(n.size()==3 && n[0]=='D'&&n[1]=='R'&&n[2]>='0'&&n[2]<='3') return n[2]-'0'; return -1; }
 int Engine::hostDiskIndex(int slot) { return slot == 0 ? 2 : slot == 1 ? 0 : -1; }
 int Engine::biosDriveIndex(uint8_t drive) { return drive < 2 ? drive : drive >= 0x80 && drive <= 0x81 ? drive - 0x80 + 2 : -1; }
-uint32_t Engine::diskSectors(int slot) const { const int index=hostDiskIndex(slot); struct stat info {}; return index >= 0 && disks[index] >= 0 && fstat(disks[index], &info) == 0 && info.st_size > 0 ? static_cast<uint32_t>(info.st_size / 512) : 0; }
+uint64_t Engine::mountedDriveBytes(int index) const { struct stat info {}; return index >= 0 && index < static_cast<int>(disks.size()) && disks[index] >= 0 && fstat(disks[index], &info) == 0 && info.st_size > 0 ? static_cast<uint64_t>(info.st_size) : 0; }
+uint32_t Engine::diskSectors(int slot) const { return static_cast<uint32_t>(mountedDriveBytes(hostDiskIndex(slot)) / 512); }
 bool Engine::mountDrive(const std::string& name,int source) { int slot=driveIndex(name); if(slot<0||source<0)return false; struct stat info {}; if(fstat(source,&info) || info.st_size<=0 || info.st_size%512)return false; if(slot<2 && info.st_size!=1474560)return false; int copy=dup(source); if(copy<0)return false; if(disks[slot]>=0)close(disks[slot]); disks[slot]=copy; return true; }
 bool Engine::dismountDrive(const std::string& name) { int slot=driveIndex(name); if(slot<0)return false; if(disks[slot]>=0)close(disks[slot]); disks[slot]=-1; return true; }
-std::string Engine::enumerateDrives() const { std::ostringstream out; for(int i=0;i<4;i++) out<<char('A'+i)<<" 8088 "<<(i<2?"floppy=1474560":"harddisk")<<" state="<<(disks[i]>=0?"mounted":"empty")<<"\r\n"; return out.str(); }
+std::string Engine::enumerateDrives() const {
+    std::ostringstream out;
+    for (int i = 0; i < 4; i++) {
+        out << char('A' + i) << " 8088 " << (i < 2 ? "floppy" : "harddisk")
+            << " state=" << (disks[i] >= 0 ? "mounted" : "empty");
+        if (const auto bytes = mountedDriveBytes(i); bytes > 0) out << " size=" << bytes;
+        out << "\r\n";
+    }
+    return out.str();
+}
 std::string Engine::diagnostics() const { std::ostringstream out; out<<"8088 diagnostics\r\nIP="<<std::hex<<v8088_get_ip()<<" CS="<<v8088_get_reg16(V8088_CS)<<" instructions="<<std::dec<<executed<<"\r\n"; return out.str(); }
 void Engine::enqueueInput(uint8_t value) { std::lock_guard<std::mutex> g(lock); input.push_back(value); }
 bool Engine::hasPendingInput() const { std::lock_guard<std::mutex> g(lock); return !input.empty(); }
