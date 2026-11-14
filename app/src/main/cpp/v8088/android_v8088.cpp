@@ -113,6 +113,15 @@ int v8088_host_intercept(unsigned char number) {
         else if (regs8[1] == 1) { unsigned char value; if (engine->keyboard(&value)) engine->putchar(value); }
         return 1;
     }
+    if (number == 0x11) {
+        // DOS asks INT 11h during startup to determine how many floppy
+        // drive letters to create. Without this, B: aliases A: even though
+        // the INT 13h handler below has a separate mounted image for it.
+        const auto floppyCount = std::max<uint8_t>(1, engine->mountedBiosDrives(false));
+        regs16[0] = static_cast<uint16_t>(0x0021 | ((floppyCount - 1) << 6));
+        regs8[40] = 0;
+        return 1;
+    }
     if (number != 0x13) return 0;
 
     // The stock 8086tiny BIOS only describes one floppy and one fixed disk.
