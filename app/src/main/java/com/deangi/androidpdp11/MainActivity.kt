@@ -110,7 +110,6 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
     val scope = rememberCoroutineScope()
     val terminal = session.terminal
     val printerCapture = session.printerCapture
-    val emulator = session.emulator
     val telnet = session.telnet
     val inputQueues = session.inputQueues
     val bootInput = session.bootInput
