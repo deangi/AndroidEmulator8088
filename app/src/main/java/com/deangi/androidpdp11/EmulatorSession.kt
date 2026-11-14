@@ -137,16 +137,18 @@ class EmulatorSession(context: Context) : AutoCloseable {
         terminal.reset()
         activeConsoleCore = pdp11Core
         withContext(Dispatchers.IO) {
-            // Phase 1 8088 smoke profile: mount A: through D: using the same
-            // descriptor-based boundary, then run the tiny guest echo loop.
-            // Its output is published by ConsoleIoRouter to both the Android
-            // terminal and every connected Telnet client.
+            // 8088 profiles use the descriptor-based media boundary. The
+            // tested smoke loop can be enabled explicitly for development;
+            // ordinary A:/C: profiles now boot their configured DOS media.
             if (profile.bootDrive.trim().uppercase() in setOf("A", "B", "C", "D")) {
                 pdp11Core.clearProfileDevices()
                 profile.drives.forEach { (drive, image) ->
                     storage.mountPdpDrive(drive, image.trimStart('/'), pdp11Core)
                 }
-                check(pdp11Core.config("smoke_test=true")) { "Could not enable 8088 console smoke test" }
+                check(pdp11Core.config("smoke_test=false")) { "Could not disable 8088 console smoke test" }
+                check(pdp11Core.config("boot_drive=${profile.bootDrive.trim()}")) {
+                    "8088 BIOS currently supports booting A: floppy or C: hard disk"
+                }
             } else {
             // vpdp1170 defines mem_size_kw in 1024-word units; PDP-11 words are
             // 16 bits, therefore each KW is 2048 addressable bytes.

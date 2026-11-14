@@ -10,16 +10,16 @@ rule.  Version **1.0.0** is reserved for the first end-user-usable release.
 
 - **0.1.0:** Project identity, Android native build, `8086tiny` CPU/BIOS
   import, console boundary, and original launcher icon.
-- **0.1.1 (in progress):** Complete Android host hooks for keyboard, console, timing, and
+- **0.1.1 (complete):** Complete Android host hooks for keyboard, console, timing, and
   diagnostic reporting; add native unit tests for reset and instruction runs.
   Add a small 8088 smoke-test program that prints `Hello from 8088\n` to both
   the on-device console and Telnet, then continuously reads input characters
   and echoes them back to both outputs.
-- **0.1.2:** Descriptor-backed A: through D: disk media with correct floppy
+- **0.1.2 (complete):** Descriptor-backed A: through D: disk media with correct floppy
   and hard-disk geometry validation.
-- **0.1.3:** Read the `v8088config*.ini` profiles from `Emulators/v8088` and
+- **0.1.3 (complete):** Read the `v8088config*.ini` profiles from `Emulators/v8088` and
   map their disk/boot selections into the engine.
-- **0.1.4:** Basic terminal UX, boot progress/error reporting, and safe media
+- **0.1.4 (in progress):** Basic terminal UX, boot progress/error reporting, and safe media
   mount/eject behavior.
 
 ## Phase 2 — usable DOS workflow (0.2.x)

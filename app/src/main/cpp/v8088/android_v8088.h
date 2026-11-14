@@ -41,6 +41,7 @@ public:
     static Engine* active();
     int diskRead(int slot, uint32_t lba, void* target, uint32_t bytes);
     int diskWrite(int slot, uint32_t lba, const void* source, uint32_t bytes);
+    uint32_t diskSectors(int slot) const;
     void putchar(uint8_t value);
     int keyboard(uint8_t* value);
 private:
@@ -50,8 +51,10 @@ private:
     mutable std::mutex lock;
     uint64_t executed { 0 };
     bool smokeTest { false };
+    uint8_t bootDrive { 0x00 };
     void installConsoleSmokeTest();
     static Engine* current;
     static int driveIndex(const std::string& name);
+    static int hostDiskIndex(int slot);
 };
 } // namespace v8088android
