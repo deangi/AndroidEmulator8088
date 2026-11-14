@@ -80,3 +80,39 @@ class BootInputController(private val enqueue: (Byte) -> Boolean, private val qu
         while (offset < pending.size && enqueue(pending[offset])) offset++
     }
 }
+
+/** Matches ESP32-style `expect => reply || ...` prompt scripts against guest output. */
+class BootScriptController(private val enqueue: (Byte) -> Boolean) {
+    private data class Step(val expect: ByteArray, val reply: ByteArray)
+    private var steps = emptyList<Step>()
+    private var stepIndex = 0
+    private val recent = ArrayDeque<Byte>()
+
+    fun arm(encoded: String) {
+        steps = encoded.split("||").mapNotNull { raw ->
+            val arrow = raw.indexOf("=>")
+            if (arrow < 0) return@mapNotNull null
+            val expect = BootText.decode(raw.substring(0, arrow).trim(' ', '\t'))
+            val reply = BootText.decode(raw.substring(arrow + 2).trim(' ', '\t'))
+            if (expect.isEmpty()) null else Step(expect, reply)
+        }
+        stepIndex = 0
+        recent.clear()
+    }
+
+    fun observe(output: ByteArray) {
+        if (stepIndex >= steps.size) return
+        for (byte in output) {
+            val expected = steps[stepIndex].expect
+            recent.addLast(byte)
+            while (recent.size > expected.size) recent.removeFirst()
+            if (recent.size == expected.size && recent.zip(expected.asIterable()).all { it.first == it.second }) {
+                val reply = steps[stepIndex++].reply
+                var offset = 0
+                while (offset < reply.size && enqueue(reply[offset])) offset++
+                recent.clear()
+                if (stepIndex >= steps.size) return
+            }
+        }
+    }
+}

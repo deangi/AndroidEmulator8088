@@ -11,7 +11,7 @@ terminal, foreground-service, Telnet, and document-storage scaffolding are
 being retained; the inherited Z80 CPU and CP/M-specific disk implementation
 are temporary and will be replaced in the PDP-11 engine phases.
 
-The current Phase 3 build is `0.3.34` (version code 334), dated 2026-11-13.
+The current Phase 3 build is `0.3.35` (version code 335), dated 2026-11-13.
 Phase numbers use the minor version (`0.1.x`, `0.2.x`, and so on); patch
 numbers advance for each build within a phase. Version `1.0.0` is reserved
 for a near-working prototype.
@@ -90,7 +90,7 @@ requires the older ADM-3A parser.
 - [ ] Retrofit the Z80 Telnet-shell drive commands to call the engine-hosted
   `DrivePort` interface exclusively, hiding CP/M/Z80 media details inside the
   Z80 engine adapter as the PDP-11 path now does.
-- [ ] Implement `[console] boot_script` for Android profiles: wait for the
+- [x] Implement `[console] boot_script` for Android profiles: wait for the
   configured console prompts and inject each corresponding response, matching
   the ESP32 profile behavior. Keep `boot_input` as the immediate typeahead
   mechanism.

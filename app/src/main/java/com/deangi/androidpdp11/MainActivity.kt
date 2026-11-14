@@ -173,7 +173,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                         scope.launch {
                             runCatching { session.bootPdp11(booted) }
                                 .onSuccess {
-                                    inputQueues.clear(); bootInput.arm(booted.bootText)
+                                    inputQueues.clear(); bootInput.arm(booted.bootText); session.bootScript.arm(booted.bootScript)
                                     diskError = ""; terminal.reset(); terminalVersion++; emulatorRunning = true
                                 }
                                 .onFailure { console.publishOutput("Boot failed: ${it.message}\r\n".encodeToByteArray()) }
@@ -308,7 +308,7 @@ private fun AndroidEmulatorPdp11App(session: EmulatorSession) {
                 scope.launch {
                     runCatching { session.bootPdp11(profile) }
                         .onSuccess {
-                            inputQueues.clear(); bootInput.arm(profile.bootText)
+                            inputQueues.clear(); bootInput.arm(profile.bootText); session.bootScript.arm(profile.bootScript)
                             terminal.reset(); terminalVersion++
                             diskError = ""
                             bootedProfile = profile

@@ -20,6 +20,8 @@ data class Vz80Profile(
     /** PDP-11 memory capacity in 1024-word units; absent for legacy Z80 profiles. */
     val memorySizeKw: Int? = null,
     val bootText: String = "",
+    /** Prompt/reply pairs for unattended boot interaction. */
+    val bootScript: String = "",
     /** Architecture-specific assignments forwarded verbatim as `key=value`. */
     val emulatorParameters: Map<String, String> = emptyMap(),
 )
@@ -551,6 +553,7 @@ class Vz80StorageRepository(private val context: Context) {
             drives = drives,
             memorySizeKw = memorySizeKw,
             bootText = bootText,
+            bootScript = values["console.boot_script"].orEmpty(),
             emulatorParameters = emulatorParameters,
         )
     }

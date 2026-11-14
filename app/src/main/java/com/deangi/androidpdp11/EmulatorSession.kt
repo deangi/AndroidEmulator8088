@@ -5,6 +5,7 @@ import android.os.SystemClock
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import com.deangi.androidpdp11.console.BootInputController
+import com.deangi.androidpdp11.console.BootScriptController
 import com.deangi.androidpdp11.console.ConsoleInputQueues
 import com.deangi.androidpdp11.console.ConsoleInputSliceService
 import com.deangi.androidpdp11.console.ConsoleIoRouter
@@ -45,6 +46,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
     val telnet = TelnetConsoleServer()
     val inputQueues = ConsoleInputQueues()
     val bootInput = BootInputController(inputQueues::enqueueLocal)
+    val bootScript = BootScriptController(inputQueues::enqueueLocal)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val coordinator = EmulatorSliceCoordinator(
         runInstructions = { activeConsoleCore.runInstructions(it) },
@@ -63,6 +65,7 @@ class EmulatorSession(context: Context) : AutoCloseable {
             while (isActive) {
                 if (emulatorRunning.value) withContext(Dispatchers.Default) { coordinator.runSlice() }
                 val output = activeConsoleCore.drainConsole()
+                bootScript.observe(output)
                 bootInput.poll(SystemClock.elapsedRealtime(), output.isNotEmpty())
                 console.publishOutput(output)
                 delay(if (emulatorRunning.value) 1 else 16)
