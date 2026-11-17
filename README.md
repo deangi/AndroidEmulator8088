@@ -7,7 +7,8 @@ interface.
 
 ## Current progress
 
-The project has reached its first usable release, **version 1.0.0**. Phase 1 established the
+The project has reached its first usable release and is currently at
+**version 1.1.0**. Phase 1 established the
 Android-native 8088 engine, launcher branding, profile parsing, safe
 descriptor-backed media mounting, and BIOS services for A: through D:.
 
@@ -26,9 +27,27 @@ Post-1.0 work:
   or losing media changes.
 - Recheck Telnet console input/output against the local terminal.
 
+### Performance status
+
+Version 1.1.0 makes two measured execution-path improvements:
+
+- The signed arm64-v8a release variant builds the native 8088 core with
+  CMake `RelWithDebInfo`, including `-O2` and `-DNDEBUG`.
+- The default host/native execution budget increased from 1,000 to 8,192
+  instructions per slice, reducing coroutine and host-service overhead.
+
+On the development device, FreeDOS boot time improved from 32 seconds in a
+debug build to 23 seconds in the optimized release build, then to **10
+seconds** with the 8,192-instruction slice. These measurements are device and
+disk-image dependent.
+
+Remaining performance work is to verify sustained keyboard and Telnet
+responsiveness at the new slice size, capture a repeatable boot benchmark,
+profile native CPU versus disk I/O time, and evaluate a dedicated emulator
+thread only if profiling shows Kotlin scheduling remains material.
+
 Future builds will cover PC 80x25 rendering and DOS key mappings,
-profile/media persistence plus image import, and printer/Telnet parity and
-performance work.
+profile/media persistence plus image import, and printer/Telnet parity.
 
 See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the staged plan and
 release gate.
@@ -58,3 +77,13 @@ Open the project in Android Studio or run:
 ```text
 ./gradlew :app:assembleDebug
 ```
+
+For a direct-install arm64 release APK:
+
+```text
+./gradlew :app:assembleRelease
+```
+
+The release configuration is signed with Android's local debug certificate
+for direct device distribution. Replace it with a private release keystore
+before any app-store publication.

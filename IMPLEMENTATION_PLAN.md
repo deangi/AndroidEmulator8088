@@ -36,6 +36,20 @@ rule.  Version **1.0.0** is reserved for the first end-user-usable release.
   image handling, user documentation, and regression testing against the
   supplied disk set.
 
+## Post-1.0 performance update — 1.1.0 (complete)
+
+- Restrict direct-install release builds to `arm64-v8a` and sign them with the
+  local Android debug certificate. Native release compilation uses
+  `RelWithDebInfo` (`-O2`, `-DNDEBUG`, and retained native debug symbols).
+- Raise the default emulator instruction budget from 1,000 to 8,192 per
+  host slice. On the development device, the measured FreeDOS boot sequence
+  improved from 32 seconds (debug) to 23 seconds (release) and then to 10
+  seconds at the larger slice.
+- Before further hot-loop changes, verify keyboard and Telnet responsiveness,
+  establish a repeatable device benchmark, and profile CPU execution versus
+  disk I/O. A dedicated emulator thread is a follow-up option only if that
+  profile shows host scheduling remains significant.
+
 ## Version 1.0.0 gate — achieved
 
 Version 1.0.0 is the first usable release. On-device verification confirms a
