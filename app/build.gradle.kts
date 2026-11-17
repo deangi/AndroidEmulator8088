@@ -35,6 +35,19 @@ android {
         buildConfig = true
     }
 
+    buildTypes {
+        release {
+            // Direct-distribution release builds use Android's local debug
+            // certificate by request. Replace this with a private release
+            // key before publishing through an app store.
+            signingConfig = signingConfigs.getByName("debug")
+            isDebuggable = false
+            ndk {
+                abiFilters += "arm64-v8a"
+            }
+        }
+    }
+
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
