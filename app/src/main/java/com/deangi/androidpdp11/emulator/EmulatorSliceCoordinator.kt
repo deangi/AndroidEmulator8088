@@ -34,5 +34,5 @@ class EmulatorSliceCoordinator(
         return cycles
     }
 
-    companion object { const val DEFAULT_INSTRUCTIONS_PER_SLICE = 1_000L }
+    companion object { const val DEFAULT_INSTRUCTIONS_PER_SLICE = 8_192L }
 }
